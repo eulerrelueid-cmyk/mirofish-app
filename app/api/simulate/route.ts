@@ -27,7 +27,7 @@ interface SimulationEvent {
 
 // Kimi API configuration
 const KIMI_BASE_URL = 'https://api.moonshot.cn/v1'
-const KIMI_MODEL = 'kimi-k2-5K'
+const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2-5K'
 
 export async function POST(request: NextRequest) {
   const errors: string[] = []
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const { title, description, seedText, userId } = await request.json()
 
     // Validate API key is present
-    const apiKey = process.env.KIMI_API_KEY
+    const apiKey = process.env.KIMI_API_KEY?.trim()
     if (!apiKey) {
       errors.push('KIMI_API_KEY environment variable is not set')
       return NextResponse.json(
@@ -48,6 +48,23 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+    
+    // Validate API key format
+    if (!apiKey.startsWith('sk-')) {
+      errors.push(`KIMI_API_KEY format invalid - should start with 'sk-', got: ${apiKey.substring(0, 10)}...`)
+      return NextResponse.json(
+        { 
+          error: 'KIMI_API_KEY format invalid',
+          details: 'Kimi API keys should start with "sk-". Check your key in Vercel environment variables.',
+          hint: 'Remove any quotes if you accidentally added them around the key value',
+          keyPreview: apiKey.substring(0, 10) + '...',
+          diagnostics: errors
+        },
+        { status: 500 }
+      )
+    }
+    
+    errors.push(`KIMI_API_KEY loaded: ${apiKey.substring(0, 12)}... (length: ${apiKey.length})`)
     
     // Validate Supabase service role key (required for API routes to bypass RLS)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -262,7 +279,7 @@ Make agents diverse in their perspectives and relevant to the scenario.`
     
     let errorMessage = `Kimi API error: ${response.status}`
     if (response.status === 401) {
-      errorMessage = 'Kimi API authentication failed - invalid or expired API key'
+      errorMessage = `Kimi API authentication failed - invalid or expired API key. Raw response: ${errorData}`
     } else if (response.status === 429) {
       errorMessage = 'Kimi API rate limit exceeded - please try again later'
     } else if (response.status === 500 || response.status === 502 || response.status === 503) {
