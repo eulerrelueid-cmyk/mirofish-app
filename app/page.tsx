@@ -8,7 +8,7 @@ import { AgentNetwork } from '@/components/AgentNetwork'
 import { EventTimeline } from '@/components/EventTimeline'
 import { StatsPanel } from '@/components/StatsPanel'
 import { SimulationResults } from '@/components/SimulationResults'
-import { SimulationScenario, SimulationStats, SimulationAgent, SimulationEvent } from '@/types/simulation'
+import { SimulationScenario, SimulationStats } from '@/types/simulation'
 import { v4 as uuidv4 } from 'uuid'
 
 const AGENT_COUNT = 20
@@ -64,15 +64,15 @@ export default function Home() {
           title,
           description,
           seedText,
-          userId: null, // Will use anonymous sessions for now
+          userId: null,
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Simulation failed')
-      }
-
       const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Simulation failed')
+      }
 
       setCurrentScenario({
         ...scenario,
@@ -86,20 +86,16 @@ export default function Home() {
         updatedAt: new Date(),
       })
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Simulation failed'
       console.error('Simulation error:', err)
-      setError('Simulation failed. Using fallback mode...')
+      setError(errorMessage)
       
-      // Fallback to mock results if API fails
-      setTimeout(() => {
-        const mockResults = generateMockResults(scenario)
-        setCurrentScenario({
-          ...scenario,
-          status: 'completed',
-          results: mockResults,
-          updatedAt: new Date(),
-        })
-        setError(null)
-      }, 2000)
+      // Update scenario status to failed
+      setCurrentScenario({
+        ...scenario,
+        status: 'failed',
+        updatedAt: new Date(),
+      })
     } finally {
       setIsSimulating(false)
     }
@@ -137,8 +133,9 @@ export default function Home() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-miro-amber/20 border border-miro-amber/50 text-miro-amber">
-            {error}
+          <div className="mb-6 p-4 rounded-xl bg-red-500/20 border border-red-500/50 text-red-400">
+            <p className="font-semibold">Error: {error}</p>
+            <p className="text-sm mt-1">Please check your Kimi API configuration and try again.</p>
           </div>
         )}
 
@@ -151,7 +148,7 @@ export default function Home() {
         </div>
 
         {/* Simulation Display */}
-        {currentScenario && (
+        {currentScenario && currentScenario.status === 'completed' && (
           <div className="space-y-6">
             {/* Stats Overview */}
             <StatsPanel stats={stats} isLoading={isSimulating} />
@@ -185,6 +182,30 @@ export default function Home() {
           </div>
         )}
 
+        {/* Failed State */}
+        {currentScenario?.status === 'failed' && !isSimulating && (
+          <div className="text-center py-20">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h3 className="text-xl font-semibold text-red-400 mb-2">
+              Simulation Failed
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {error || 'An error occurred during the simulation.'}
+            </p>
+            <button
+              onClick={() => {
+                setCurrentScenario(null)
+                setError(null)
+              }}
+              className="px-6 py-3 rounded-xl bg-miro-accent text-white font-medium hover:bg-miro-accent/80 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
         {/* Empty State */}
         {!currentScenario && !isSimulating && (
           <div className="text-center py-20">
@@ -200,52 +221,4 @@ export default function Home() {
       </div>
     </main>
   )
-}
-
-function generateMockResults(scenario: SimulationScenario) {
-  const states: ('idle' | 'active' | 'interacting')[] = ['idle', 'active', 'interacting']
-  const eventTypes: ('interaction' | 'sentiment_shift' | 'emergence' | 'milestone')[] = ['interaction', 'sentiment_shift', 'emergence', 'milestone']
-  
-  const agents: SimulationAgent[] = Array.from({ length: AGENT_COUNT }, (_, i) => ({
-    id: `agent-${i}`,
-    name: `Agent ${i + 1}`,
-    role: ['Influencer', 'Observer', 'Critic', 'Supporter', 'Analyst'][Math.floor(Math.random() * 5)],
-    personality: ['Optimistic', 'Pessimistic', 'Neutral', 'Aggressive', 'Cautious'][Math.floor(Math.random() * 5)],
-    x: Math.random() * 800,
-    y: Math.random() * 600,
-    connections: [],
-    state: states[Math.floor(Math.random() * 3)],
-    sentiment: (Math.random() * 2 - 1),
-    influence: Math.random(),
-  }))
-
-  const events: SimulationEvent[] = Array.from({ length: 12 }, (_, i) => ({
-    id: `event-${i}`,
-    timestamp: new Date(Date.now() - (12 - i) * 60000),
-    type: eventTypes[Math.floor(Math.random() * 4)],
-    description: [
-      'Agent cluster formed around topic',
-      'Sentiment shift detected in sector A',
-      'Emergent behavior observed',
-      'Consensus reached on key issue',
-      'New connection established',
-    ][Math.floor(Math.random() * 5)],
-    agentsInvolved: [`agent-${Math.floor(Math.random() * AGENT_COUNT)}`, `agent-${Math.floor(Math.random() * AGENT_COUNT)}`],
-    impact: Math.random(),
-  }))
-
-  const positiveAgents = agents.filter(a => a.sentiment > 0).length
-  const avgSentiment = agents.reduce((acc, a) => acc + a.sentiment, 0) / agents.length
-
-  return {
-    agents,
-    events,
-    summary: `Simulation of "${scenario.title}" completed with ${agents.length} agents. Key findings: sentiment distribution shows ${positiveAgents} positive agents with overall ${avgSentiment > 0 ? 'positive' : 'negative'} sentiment trajectory.`,
-    predictions: [
-      `${(positiveAgents / agents.length * 100).toFixed(0)}% probability of favorable outcome`,
-      'Consensus emerging on key decision factors',
-      avgSentiment > 0 ? 'Optimistic trajectory predicted' : 'Cautious approach recommended',
-      'Monitor influential agents for sentiment shifts',
-    ],
-  }
 }
