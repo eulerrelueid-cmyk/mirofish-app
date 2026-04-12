@@ -25,6 +25,10 @@ interface SimulationEvent {
   impact: number
 }
 
+// Kimi API configuration
+const KIMI_BASE_URL = 'https://api.moonshot.cn/v1'
+const KIMI_MODEL = 'kimi-k2-5K'
+
 export async function POST(request: NextRequest) {
   try {
     const { title, description, seedText, userId } = await request.json()
@@ -48,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create scenario' }, { status: 500 })
     }
 
-    // Generate agents using AI model
+    // Generate agents using Kimi AI
     const agents = await generateAgentsWithAI(title, description, seedText)
     
     // Save agents to database
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
       console.error('Error saving events:', eventsError)
     }
 
-    // Generate summary and predictions using AI
+    // Generate summary and predictions using Kimi AI
     const { summary, predictions } = await generateAnalysisWithAI(
       title,
       description,
@@ -143,10 +147,10 @@ async function generateAgentsWithAI(
   description: string,
   seedText?: string
 ): Promise<Agent[]> {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.KIMI_API_KEY
   
   if (!apiKey) {
-    console.warn('No OpenAI API key found, using mock agents')
+    console.warn('No Kimi API key found, using mock agents')
     return generateMockAgents()
   }
 
@@ -178,32 +182,34 @@ Return ONLY a valid JSON array with this exact structure:
 
 Make agents diverse in their perspectives and relevant to the scenario.`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.AI_MODEL || 'gpt-4o-mini',
+        model: process.env.KIMI_MODEL || KIMI_MODEL,
         messages: [
           { role: 'system', content: 'You are a simulation engine that generates diverse AI agents for scenario analysis.' },
           { role: 'user', content: prompt },
         ],
         temperature: 0.8,
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      const errorData = await response.text()
+      console.error('Kimi API error:', errorData)
+      throw new Error(`Kimi API error: ${response.status}`)
     }
 
     const data = await response.json()
     const content = data.choices[0]?.message?.content
     
     if (!content) {
-      throw new Error('No content from AI')
+      throw new Error('No content from Kimi AI')
     }
 
     // Parse JSON from response
@@ -225,7 +231,7 @@ Make agents diverse in their perspectives and relevant to the scenario.`
       influence: Math.max(0, Math.min(1, agent.influence)),
     }))
   } catch (error) {
-    console.error('AI generation failed, using mock agents:', error)
+    console.error('Kimi AI generation failed, using mock agents:', error)
     return generateMockAgents()
   }
 }
@@ -253,10 +259,10 @@ async function generateAnalysisWithAI(
   seedText: string | undefined,
   agents: Agent[]
 ): Promise<{ summary: string; predictions: string[] }> {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.KIMI_API_KEY
   
   if (!apiKey) {
-    console.warn('No OpenAI API key found, using mock analysis')
+    console.warn('No Kimi API key found, using mock analysis')
     return generateMockAnalysis(agents)
   }
 
@@ -296,32 +302,34 @@ Return ONLY valid JSON:
   "predictions": ["string", "string", "string", "string"]
 }`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.AI_MODEL || 'gpt-4o-mini',
+        model: process.env.KIMI_MODEL || KIMI_MODEL,
         messages: [
           { role: 'system', content: 'You are a strategic analysis engine that interprets multi-agent simulation results.' },
           { role: 'user', content: prompt },
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 2000,
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      const errorData = await response.text()
+      console.error('Kimi API error:', errorData)
+      throw new Error(`Kimi API error: ${response.status}`)
     }
 
     const data = await response.json()
     const content = data.choices[0]?.message?.content
     
     if (!content) {
-      throw new Error('No content from AI')
+      throw new Error('No content from Kimi AI')
     }
 
     const jsonMatch = content.match(/\{[\s\S]*\}/)
@@ -337,7 +345,7 @@ Return ONLY valid JSON:
       ],
     }
   } catch (error) {
-    console.error('AI analysis failed, using mock analysis:', error)
+    console.error('Kimi AI analysis failed, using mock analysis:', error)
     return generateMockAnalysis(agents)
   }
 }
@@ -353,7 +361,7 @@ function generateMockAnalysis(agents: Agent[]): { summary: string; predictions: 
     predictions: [
       `${(positiveAgents / agents.length * 100).toFixed(0)}% probability of favorable outcome`,
       'Consensus emerging on key decision factors',
-      'Early signals suggest ${avgSentiment > 0 ? 'optimistic' : 'cautious'} trajectory',
+      `Early signals suggest ${avgSentiment > 0 ? 'optimistic' : 'cautious'} trajectory`,
       'Monitor influential agents for sentiment shifts',
     ],
   }
@@ -362,9 +370,9 @@ function generateMockAnalysis(agents: Agent[]): { summary: string; predictions: 
 function generateEvents(agents: Agent[]): SimulationEvent[] {
   const eventTypes: ('interaction' | 'sentiment_shift' | 'emergence' | 'milestone')[] = ['interaction', 'sentiment_shift', 'emergence', 'milestone']
   
-  return Array.from({ length: 15 }, (_, i) => ({
+  return Array.from({ length: 12 }, (_, i) => ({
     id: `event-${i}`,
-    timestamp: new Date(Date.now() - (15 - i) * 60000),
+    timestamp: new Date(Date.now() - (12 - i) * 60000),
     type: eventTypes[Math.floor(Math.random() * 4)],
     description: [
       'Agent cluster formed around topic',
