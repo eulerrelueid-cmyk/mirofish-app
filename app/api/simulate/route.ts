@@ -293,7 +293,7 @@ Make agents diverse in their perspectives and relevant to the scenario.`
         { role: 'system', content: 'You are a simulation engine that generates diverse AI agents for scenario analysis.' },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.8,
+      temperature: 1.0,
       max_tokens: 4000,
     }),
   })
@@ -409,7 +409,7 @@ Return ONLY valid JSON:
         { role: 'system', content: 'You are a strategic analysis engine that interprets multi-agent simulation results.' },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.7,
+      temperature: 1.0,
       max_tokens: 2000,
     }),
   })
@@ -421,7 +421,9 @@ Return ONLY valid JSON:
     console.error('Kimi API statusText:', response.statusText)
     
     let errorMessage = `Kimi API error: ${response.status}`
-    if (response.status === 401) {
+    if (response.status === 400) {
+      errorMessage = `Kimi API bad request - invalid parameters. Raw response: ${errorData}`
+    } else if (response.status === 401) {
       errorMessage = 'Kimi API authentication failed - invalid or expired API key'
     } else if (response.status === 429) {
       errorMessage = 'Kimi API rate limit exceeded - please try again later'
