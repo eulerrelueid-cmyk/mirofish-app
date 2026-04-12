@@ -30,14 +30,34 @@ const KIMI_BASE_URL = 'https://api.moonshot.cn/v1'
 const KIMI_MODEL = 'kimi-k2-5K'
 
 export async function POST(request: NextRequest) {
+  const errors: string[] = []
+  
   try {
     const { title, description, seedText, userId } = await request.json()
 
     // Validate API key is present
     const apiKey = process.env.KIMI_API_KEY
     if (!apiKey) {
+      errors.push('KIMI_API_KEY environment variable is not set')
       return NextResponse.json(
-        { error: 'KIMI_API_KEY not configured' },
+        { 
+          error: 'KIMI_API_KEY not configured',
+          details: 'Please add KIMI_API_KEY to your Vercel environment variables',
+          diagnostics: errors
+        },
+        { status: 500 }
+      )
+    }
+    
+    // Validate Supabase connection
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      errors.push('Supabase environment variables missing')
+      return NextResponse.json(
+        { 
+          error: 'Supabase configuration error',
+          details: 'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set',
+          diagnostics: errors
+        },
         { status: 500 }
       )
     }
@@ -58,7 +78,16 @@ export async function POST(request: NextRequest) {
 
     if (scenarioError) {
       console.error('Error creating scenario:', scenarioError)
-      return NextResponse.json({ error: 'Failed to create scenario' }, { status: 500 })
+      errors.push(`Database error: ${scenarioError.message}`)
+      errors.push(`Error code: ${scenarioError.code}`)
+      errors.push(`Error details: ${JSON.stringify(scenarioError.details)}`)
+      return NextResponse.json({ 
+        error: 'Failed to create scenario',
+        details: scenarioError.message,
+        code: scenarioError.code,
+        hint: scenarioError.code === '42P01' ? 'Table does not exist - run schema.sql in Supabase' : undefined,
+        diagnostics: errors
+      }, { status: 500 })
     }
 
     try {
@@ -165,7 +194,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Simulation error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Simulation failed'
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const errorStack = error instanceof Error ? error.stack : undefined
+    return NextResponse.json({ 
+      error: errorMessage,
+      stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
+      diagnostics: errors
+    }, { status: 500 })
   }
 }
 
@@ -221,21 +255,39 @@ Make agents diverse in their perspectives and relevant to the scenario.`
 
   if (!response.ok) {
     const errorData = await response.text()
-    console.error('Kimi API error:', errorData)
-    throw new Error(`Kimi API error: ${response.status}`)
+    console.error('Kimi API error (generateAgents):', errorData)
+    console.error('Kimi API status:', response.status)
+    console.error('Kimi API statusText:', response.statusText)
+    
+    let errorMessage = `Kimi API error: ${response.status}`
+    if (response.status === 401) {
+      errorMessage = 'Kimi API authentication failed - invalid or expired API key'
+    } else if (response.status === 429) {
+      errorMessage = 'Kimi API rate limit exceeded - please try again later'
+    } else if (response.status === 500 || response.status === 502 || response.status === 503) {
+      errorMessage = 'Kimi API server error - temporary issue, please retry'
+    }
+    
+    throw new Error(errorMessage)
   }
 
   const data = await response.json()
   const content = data.choices[0]?.message?.content
   
   if (!content) {
-    throw new Error('No content from Kimi AI')
+    throw new Error('No content from Kimi AI (generateAgents)')
   }
 
   // Parse JSON from response
   const jsonMatch = content.match(/\[[\s\S]*\]/)
   const jsonStr = jsonMatch ? jsonMatch[0] : content
-  const agentData = JSON.parse(jsonStr)
+  let agentData
+  try {
+    agentData = JSON.parse(jsonStr)
+  } catch (parseError) {
+    console.error('Failed to parse agent JSON:', jsonStr)
+    throw new Error('Invalid JSON format from Kimi AI (generateAgents)')
+  }
 
   if (!Array.isArray(agentData) || agentData.length !== AGENT_COUNT) {
     throw new Error(`Expected ${AGENT_COUNT} agents, got ${agentData?.length || 0}`)
@@ -317,23 +369,41 @@ Return ONLY valid JSON:
 
   if (!response.ok) {
     const errorData = await response.text()
-    console.error('Kimi API error:', errorData)
-    throw new Error(`Kimi API error: ${response.status}`)
+    console.error('Kimi API error (generateAnalysis):', errorData)
+    console.error('Kimi API status:', response.status)
+    console.error('Kimi API statusText:', response.statusText)
+    
+    let errorMessage = `Kimi API error: ${response.status}`
+    if (response.status === 401) {
+      errorMessage = 'Kimi API authentication failed - invalid or expired API key'
+    } else if (response.status === 429) {
+      errorMessage = 'Kimi API rate limit exceeded - please try again later'
+    } else if (response.status === 500 || response.status === 502 || response.status === 503) {
+      errorMessage = 'Kimi API server error - temporary issue, please retry'
+    }
+    
+    throw new Error(errorMessage)
   }
 
   const data = await response.json()
   const content = data.choices[0]?.message?.content
   
   if (!content) {
-    throw new Error('No content from Kimi AI')
+    throw new Error('No content from Kimi AI (generateAnalysis)')
   }
 
   const jsonMatch = content.match(/\{[\s\S]*\}/)
   const jsonStr = jsonMatch ? jsonMatch[0] : content
-  const analysis = JSON.parse(jsonStr)
+  let analysis
+  try {
+    analysis = JSON.parse(jsonStr)
+  } catch (parseError) {
+    console.error('Failed to parse analysis JSON:', jsonStr)
+    throw new Error('Invalid JSON format from Kimi AI (generateAnalysis)')
+  }
 
   if (!analysis.summary || !Array.isArray(analysis.predictions)) {
-    throw new Error('Invalid response format from Kimi AI')
+    throw new Error('Invalid response format from Kimi AI - missing summary or predictions')
   }
 
   return {
