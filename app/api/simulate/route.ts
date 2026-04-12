@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const AGENT_COUNT = 20
 
@@ -49,13 +49,14 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Validate Supabase connection
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      errors.push('Supabase environment variables missing')
+    // Validate Supabase service role key (required for API routes to bypass RLS)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      errors.push('SUPABASE_SERVICE_ROLE_KEY environment variable is not set')
       return NextResponse.json(
         { 
-          error: 'Supabase configuration error',
-          details: 'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set',
+          error: 'Supabase service role key not configured',
+          details: 'Please add SUPABASE_SERVICE_ROLE_KEY to your Vercel environment variables',
+          hint: 'Get it from Supabase Dashboard → Project Settings → API → service_role key',
           diagnostics: errors
         },
         { status: 500 }
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create scenario in database
-    const { data: scenario, error: scenarioError } = await supabase
+    const { data: scenario, error: scenarioError } = await supabaseAdmin
       .from('mirofish_scenarios')
       .insert({
         title,
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       const agents = await generateAgentsWithAI(title, description, seedText, apiKey)
       
       // Save agents to database
-      const { error: agentsError } = await supabase
+      const { error: agentsError } = await supabaseAdmin
         .from('mirofish_agents')
         .insert(
           agents.map(agent => ({
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
       const events = generateEvents(agents)
       
       // Save events to database
-      const { error: eventsError } = await supabase
+      const { error: eventsError } = await supabaseAdmin
         .from('mirofish_events')
         .insert(
           events.map(event => ({
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
         predictions,
       }
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('mirofish_scenarios')
         .update({
           status: 'completed',
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
       })
     } catch (error) {
       // Update scenario status to failed
-      await supabase
+      await supabaseAdmin
         .from('mirofish_scenarios')
         .update({
           status: 'failed',
