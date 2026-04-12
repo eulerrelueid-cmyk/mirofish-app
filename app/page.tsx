@@ -8,12 +8,15 @@ import { AgentNetwork } from '@/components/AgentNetwork'
 import { EventTimeline } from '@/components/EventTimeline'
 import { StatsPanel } from '@/components/StatsPanel'
 import { SimulationResults } from '@/components/SimulationResults'
-import { SimulationScenario, SimulationStats } from '@/types/simulation'
+import { SimulationScenario, SimulationStats, SimulationAgent, SimulationEvent } from '@/types/simulation'
 import { v4 as uuidv4 } from 'uuid'
+
+const AGENT_COUNT = 20
 
 export default function Home() {
   const [currentScenario, setCurrentScenario] = useState<SimulationScenario | null>(null)
   const [isSimulating, setIsSimulating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleScenarioSubmit = useCallback(async (
     title: string, 
@@ -22,8 +25,9 @@ export default function Home() {
     file?: File
   ) => {
     setIsSimulating(true)
+    setError(null)
     
-    // Create new scenario
+    // Create initial scenario
     const scenario: SimulationScenario = {
       id: uuidv4(),
       title,
@@ -33,7 +37,7 @@ export default function Home() {
       createdAt: new Date(),
       updatedAt: new Date(),
       parameters: {
-        agentCount: 50,
+        agentCount: AGENT_COUNT,
         simulationRounds: 100,
         temperature: 0.7,
       },
@@ -49,17 +53,56 @@ export default function Home() {
 
     setCurrentScenario(scenario)
 
-    // Simulate API call to MiroFish backend
-    setTimeout(() => {
-      const mockResults = generateMockResults(scenario)
+    try {
+      // Call the simulation API
+      const response = await fetch('/api/simulate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          seedText,
+          userId: null, // Will use anonymous sessions for now
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Simulation failed')
+      }
+
+      const data = await response.json()
+
       setCurrentScenario({
         ...scenario,
         status: 'completed',
-        results: mockResults,
+        results: {
+          agents: data.agents,
+          events: data.events,
+          summary: data.summary,
+          predictions: data.predictions,
+        },
         updatedAt: new Date(),
       })
+    } catch (err) {
+      console.error('Simulation error:', err)
+      setError('Simulation failed. Using fallback mode...')
+      
+      // Fallback to mock results if API fails
+      setTimeout(() => {
+        const mockResults = generateMockResults(scenario)
+        setCurrentScenario({
+          ...scenario,
+          status: 'completed',
+          results: mockResults,
+          updatedAt: new Date(),
+        })
+        setError(null)
+      }, 2000)
+    } finally {
       setIsSimulating(false)
-    }, 3000)
+    }
   }, [])
 
   const stats: SimulationStats = currentScenario?.results ? {
@@ -88,9 +131,16 @@ export default function Home() {
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             Predict anything with swarm intelligence. Upload seed materials, describe your scenario, 
-            and watch thousands of AI agents simulate the future.
+            and watch {AGENT_COUNT} AI agents simulate the future.
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-miro-amber/20 border border-miro-amber/50 text-miro-amber">
+            {error}
+          </div>
+        )}
 
         {/* Input Section */}
         <div className="mb-12">
@@ -143,7 +193,7 @@ export default function Home() {
               Ready to Simulate
             </h3>
             <p className="text-gray-500">
-              Enter a scenario above to start your first prediction
+              Enter a scenario above to start your first prediction with {AGENT_COUNT} AI agents
             </p>
           </div>
         )}
@@ -156,24 +206,22 @@ function generateMockResults(scenario: SimulationScenario) {
   const states: ('idle' | 'active' | 'interacting')[] = ['idle', 'active', 'interacting']
   const eventTypes: ('interaction' | 'sentiment_shift' | 'emergence' | 'milestone')[] = ['interaction', 'sentiment_shift', 'emergence', 'milestone']
   
-  const agents = Array.from({ length: 50 }, (_, i) => ({
+  const agents: SimulationAgent[] = Array.from({ length: AGENT_COUNT }, (_, i) => ({
     id: `agent-${i}`,
     name: `Agent ${i + 1}`,
     role: ['Influencer', 'Observer', 'Critic', 'Supporter', 'Analyst'][Math.floor(Math.random() * 5)],
     personality: ['Optimistic', 'Pessimistic', 'Neutral', 'Aggressive', 'Cautious'][Math.floor(Math.random() * 5)],
     x: Math.random() * 800,
     y: Math.random() * 600,
-    connections: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, () => 
-      `agent-${Math.floor(Math.random() * 50)}`
-    ),
+    connections: [],
     state: states[Math.floor(Math.random() * 3)],
     sentiment: (Math.random() * 2 - 1),
     influence: Math.random(),
   }))
 
-  const events = Array.from({ length: 20 }, (_, i) => ({
+  const events: SimulationEvent[] = Array.from({ length: 12 }, (_, i) => ({
     id: `event-${i}`,
-    timestamp: new Date(Date.now() - (20 - i) * 60000),
+    timestamp: new Date(Date.now() - (12 - i) * 60000),
     type: eventTypes[Math.floor(Math.random() * 4)],
     description: [
       'Agent cluster formed around topic',
@@ -182,19 +230,22 @@ function generateMockResults(scenario: SimulationScenario) {
       'Consensus reached on key issue',
       'New connection established',
     ][Math.floor(Math.random() * 5)],
-    agentsInvolved: [`agent-${Math.floor(Math.random() * 50)}`, `agent-${Math.floor(Math.random() * 50)}`],
+    agentsInvolved: [`agent-${Math.floor(Math.random() * AGENT_COUNT)}`, `agent-${Math.floor(Math.random() * AGENT_COUNT)}`],
     impact: Math.random(),
   }))
+
+  const positiveAgents = agents.filter(a => a.sentiment > 0).length
+  const avgSentiment = agents.reduce((acc, a) => acc + a.sentiment, 0) / agents.length
 
   return {
     agents,
     events,
-    summary: `Simulation of "${scenario.title}" completed with ${agents.length} agents over 100 rounds. Key findings: sentiment converged toward positive territory with 78% agreement on core predictions.`,
+    summary: `Simulation of "${scenario.title}" completed with ${agents.length} agents. Key findings: sentiment distribution shows ${positiveAgents} positive agents with overall ${avgSentiment > 0 ? 'positive' : 'negative'} sentiment trajectory.`,
     predictions: [
-      '65% probability of positive outcome within 30 days',
-      'Strong consensus forming around alternative approach B',
-      'Early adopters likely to drive mainstream adoption by Q3',
-      'Risk factors remain concentrated in regulatory uncertainty',
+      `${(positiveAgents / agents.length * 100).toFixed(0)}% probability of favorable outcome`,
+      'Consensus emerging on key decision factors',
+      avgSentiment > 0 ? 'Optimistic trajectory predicted' : 'Cautious approach recommended',
+      'Monitor influential agents for sentiment shifts',
     ],
   }
 }
