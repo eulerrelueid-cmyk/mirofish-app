@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
     }
     
     errors.push('Kimi API key validation passed')
+    errors.push(`Using API base URL: ${KIMI_BASE_URL}`)
+    errors.push(`Using model: ${process.env.KIMI_MODEL || KIMI_MODEL}`)
     
     // Validate Supabase service role key (required for API routes to bypass RLS)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -303,7 +305,9 @@ Make agents diverse in their perspectives and relevant to the scenario.`
     console.error('Kimi API statusText:', response.statusText)
     
     let errorMessage = `Kimi API error: ${response.status}`
-    if (response.status === 401) {
+    if (response.status === 400) {
+      errorMessage = `Kimi API bad request - invalid parameters. Raw response: ${errorData}`
+    } else if (response.status === 401) {
       errorMessage = `Kimi API authentication failed - invalid or expired API key. Raw response: ${errorData}`
     } else if (response.status === 429) {
       errorMessage = 'Kimi API rate limit exceeded - please try again later'
