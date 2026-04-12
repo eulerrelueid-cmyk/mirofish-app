@@ -66,6 +66,31 @@ export async function POST(request: NextRequest) {
     
     errors.push(`KIMI_API_KEY loaded: ${apiKey.substring(0, 12)}... (length: ${apiKey.length})`)
     
+    // Test API key with a simple request first
+    const testResponse = await fetch(`${KIMI_BASE_URL}/models`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    })
+    
+    if (!testResponse.ok) {
+      const testError = await testResponse.text()
+      errors.push(`Kimi API test failed: ${testResponse.status} - ${testError}`)
+      return NextResponse.json(
+        { 
+          error: 'Kimi API authentication test failed',
+          details: `Test request to /models returned ${testResponse.status}`,
+          rawError: testError,
+          hint: 'Your API key may be expired, revoked, or you may need to add credits to your Moonshot account',
+          diagnostics: errors
+        },
+        { status: 500 }
+      )
+    }
+    
+    errors.push('Kimi API key validation passed')
+    
     // Validate Supabase service role key (required for API routes to bypass RLS)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       errors.push('SUPABASE_SERVICE_ROLE_KEY environment variable is not set')
