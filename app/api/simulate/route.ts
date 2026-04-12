@@ -25,8 +25,8 @@ interface SimulationEvent {
   impact: number
 }
 
-// Kimi API configuration
-const KIMI_BASE_URL = 'https://api.moonshot.cn/v1'
+// Kimi API configuration - auto-detect endpoint from env
+const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.cn/v1'
 const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2.5'
 
 export async function POST(request: NextRequest) {
