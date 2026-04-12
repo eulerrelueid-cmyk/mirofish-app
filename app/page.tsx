@@ -153,6 +153,9 @@ export default function Home() {
 }
 
 function generateMockResults(scenario: SimulationScenario) {
+  const states: ('idle' | 'active' | 'interacting')[] = ['idle', 'active', 'interacting']
+  const eventTypes: ('interaction' | 'sentiment_shift' | 'emergence' | 'milestone')[] = ['interaction', 'sentiment_shift', 'emergence', 'milestone']
+  
   const agents = Array.from({ length: 50 }, (_, i) => ({
     id: `agent-${i}`,
     name: `Agent ${i + 1}`,
@@ -163,7 +166,7 @@ function generateMockResults(scenario: SimulationScenario) {
     connections: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, () => 
       `agent-${Math.floor(Math.random() * 50)}`
     ),
-    state: ['idle', 'active', 'interacting'][Math.floor(Math.random() * 3)] as const,
+    state: states[Math.floor(Math.random() * 3)],
     sentiment: (Math.random() * 2 - 1),
     influence: Math.random(),
   }))
@@ -171,7 +174,7 @@ function generateMockResults(scenario: SimulationScenario) {
   const events = Array.from({ length: 20 }, (_, i) => ({
     id: `event-${i}`,
     timestamp: new Date(Date.now() - (20 - i) * 60000),
-    type: ['interaction', 'sentiment_shift', 'emergence', 'milestone'][Math.floor(Math.random() * 4)] as const,
+    type: eventTypes[Math.floor(Math.random() * 4)],
     description: [
       'Agent cluster formed around topic',
       'Sentiment shift detected in sector A',
