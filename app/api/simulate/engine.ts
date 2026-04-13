@@ -18,11 +18,11 @@ import {
   SimulationRound,
   AgentAction,
   AgentMemory,
-  AgentProfile
 } from '@/types/simulation'
 
 const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.cn/v1'
 const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2.5'
+const USE_MOCK_MODE = process.env.USE_MOCK_SIMULATION === 'true'
 
 interface SimulationConfig {
   agentCount: number
@@ -39,11 +39,11 @@ interface SimulationState {
   events: SimulationEvent[]
   rounds: SimulationRound[]
   currentRound: number
-  agentOpinions: Map<string, Map<string, number>> // agentId -> (targetAgentId -> opinion)
+  agentOpinions: Map<string, Map<string, number>>
   trendingTopics: string[]
 }
 
-// Content templates for fallback generation
+// Content templates for fallback/mock generation
 const POST_TEMPLATES = {
   support: [
     "This approach could really transform how we think about {topic}. The potential benefits are substantial.",
@@ -122,11 +122,23 @@ export async function runSimulation(config: SimulationConfig): Promise<{
 
   console.log(`[Simulation] Starting: ${config.scenarioTitle}`)
   console.log(`[Simulation] Config: ${config.agentCount} agents, ${config.rounds} rounds`)
+  console.log(`[Simulation] Mock mode: ${USE_MOCK_MODE}`)
 
   // Step 1: Generate rich agent personas
   console.log('[Simulation] Generating agent personas...')
-  state.agents = await generateAgents(config)
-  console.log(`[Simulation] Generated ${state.agents.length} agents with rich personas`)
+  
+  if (USE_MOCK_MODE) {
+    state.agents = generateFallbackAgents(config.agentCount, config.scenarioTitle)
+  } else {
+    try {
+      state.agents = await generateAgents(config)
+    } catch (error) {
+      console.warn('[Simulation] Failed to generate agents via API, using fallback:', error)
+      state.agents = generateFallbackAgents(config.agentCount, config.scenarioTitle)
+    }
+  }
+  
+  console.log(`[Simulation] Generated ${state.agents.length} agents`)
 
   // Initialize agent opinions matrix
   state.agents.forEach(agent => {
@@ -138,22 +150,51 @@ export async function runSimulation(config: SimulationConfig): Promise<{
     state.currentRound = round
     console.log(`[Simulation] Round ${round}/${config.rounds}`)
     
-    const roundResult = await runSimulationRound(state, config, round)
-    state.rounds.push(roundResult)
-    
-    // Generate events based on round activity
-    const roundEvents = generateEventsFromRound(roundResult, state, round)
-    state.events.push(...roundEvents)
-    
-    // Update trending topics every few rounds
-    if (round % 3 === 0) {
-      updateTrendingTopics(state)
+    try {
+      const roundResult = await runSimulationRound(state, config, round)
+      state.rounds.push(roundResult)
+      
+      // Generate events based on round activity
+      const roundEvents = generateEventsFromRound(roundResult, state, round)
+      state.events.push(...roundEvents)
+      
+      // Update trending topics every few rounds
+      if (round % 3 === 0) {
+        updateTrendingTopics(state)
+      }
+    } catch (error) {
+      console.error(`[Simulation] Error in round ${round}:`, error)
+      // Continue with next round rather than failing completely
     }
   }
 
   // Step 3: Generate comprehensive analysis
   console.log('[Simulation] Generating final analysis...')
-  const { summary, predictions } = await generateAnalysis(state, config)
+  let summary: string
+  let predictions: string[]
+  
+  if (USE_MOCK_MODE) {
+    const avgSentiment = state.agents.reduce((acc, a) => acc + a.sentiment, 0) / state.agents.length
+    summary = generateFallbackSummary(state, avgSentiment, 
+      state.agents.filter(a => a.sentiment > 0).length, 
+      state.agents.filter(a => a.sentiment < 0).length)
+    predictions = generateFallbackPredictions(state, avgSentiment, 
+      [...state.agents].sort((a, b) => b.influence - a.influence).slice(0, 5))
+  } else {
+    try {
+      const analysis = await generateAnalysis(state, config)
+      summary = analysis.summary
+      predictions = analysis.predictions
+    } catch (error) {
+      console.warn('[Simulation] Failed to generate analysis via API, using fallback:', error)
+      const avgSentiment = state.agents.reduce((acc, a) => acc + a.sentiment, 0) / state.agents.length
+      summary = generateFallbackSummary(state, avgSentiment,
+        state.agents.filter(a => a.sentiment > 0).length,
+        state.agents.filter(a => a.sentiment < 0).length)
+      predictions = generateFallbackPredictions(state, avgSentiment,
+        [...state.agents].sort((a, b) => b.influence - a.influence).slice(0, 5))
+    }
+  }
 
   console.log('[Simulation] Complete!')
   console.log(`[Simulation] Final: ${state.posts.length} posts, ${state.events.length} events`)
@@ -213,6 +254,9 @@ Return ONLY a valid JSON array with this structure:
 
 Make each agent feel like a real person with a credible professional background.`
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
   try {
     const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -229,10 +273,14 @@ Make each agent feel like a real person with a credible professional background.
         temperature: 0.9,
         max_tokens: 4000,
       }),
+      signal: controller.signal,
     })
 
+    clearTimeout(timeoutId)
+
     if (!response.ok) {
-      throw new Error(`Kimi API error: ${response.status}`)
+      const errorText = await response.text()
+      throw new Error(`Kimi API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
@@ -281,41 +329,48 @@ Make each agent feel like a real person with a credible professional background.
       }
     }))
   } catch (error) {
-    console.error('Error generating agents:', error)
-    // Fallback to default agents
-    return generateFallbackAgents(config.agentCount)
+    clearTimeout(timeoutId)
+    throw error
   }
 }
 
 /**
  * Generate fallback agents if API fails
  */
-function generateFallbackAgents(count: number): SimulationAgent[] {
-  const roles = ['Strategy Consultant', 'Product Manager', 'Risk Analyst', 'CEO', 'Research Director', 'VP Engineering', 'CFO', 'Innovation Lead']
-  const personalities = ['Analytical', 'Visionary', 'Skeptical', 'Pragmatic', 'Optimistic', 'Cautious', 'Assertive', 'Collaborative']
+function generateFallbackAgents(count: number, scenarioTitle: string): SimulationAgent[] {
+  const roles = ['Strategy Consultant', 'Product Manager', 'Risk Analyst', 'CEO', 'Research Director', 'VP Engineering', 'CFO', 'Innovation Lead', 'Data Scientist', 'Policy Advisor']
+  const personalities = ['Analytical', 'Visionary', 'Skeptical', 'Pragmatic', 'Optimistic', 'Cautious', 'Assertive', 'Collaborative', 'Detail-oriented', 'Big-picture thinker']
   
-  return Array.from({ length: count }, (_, i) => ({
-    id: `agent-${i}`,
-    name: `Agent ${i + 1}`,
-    role: roles[i % roles.length],
-    personality: personalities[i % personalities.length],
-    bio: `A ${roles[i % roles.length].toLowerCase()} with expertise in strategic decision making.`,
-    stance: i % 5 === 0 ? 'strongly_for' : i % 5 === 1 ? 'moderately_for' : i % 5 === 2 ? 'neutral' : i % 5 === 3 ? 'moderately_against' : 'strongly_against',
-    communicationStyle: 'professional and balanced',
-    expertise: ['Strategy', 'Analysis'],
-    motivations: 'Professional growth and organizational success',
-    x: 100 + Math.random() * 700,
-    y: 100 + Math.random() * 500,
-    connections: [],
-    state: 'idle',
-    sentiment: (Math.random() - 0.5) * 1.5,
-    influence: 0.3 + Math.random() * 0.5,
-    memory: {
-      postsSeen: [],
-      interactions: [],
-      sentimentHistory: [{ round: 0, sentiment: (Math.random() - 0.5) * 1.5 }]
+  const names = [
+    'Alex Chen', 'Jordan Smith', 'Taylor Williams', 'Morgan Brown', 'Casey Davis',
+    'Riley Johnson', 'Quinn Miller', 'Avery Wilson', 'Cameron Moore', 'Drew Anderson'
+  ]
+  
+  return Array.from({ length: count }, (_, i) => {
+    const sentiment = (Math.random() - 0.5) * 1.5
+    return {
+      id: `agent-${i}`,
+      name: names[i % names.length] || `Agent ${i + 1}`,
+      role: roles[i % roles.length],
+      personality: personalities[i % personalities.length],
+      bio: `A ${roles[i % roles.length].toLowerCase()} with expertise in ${scenarioTitle.toLowerCase()}. They bring ${personalities[i % personalities.length].toLowerCase()} insights to the discussion.`,
+      stance: sentiment > 0.4 ? 'strongly_for' : sentiment > 0.1 ? 'moderately_for' : sentiment > -0.1 ? 'neutral' : sentiment > -0.4 ? 'moderately_against' : 'strongly_against',
+      communicationStyle: i % 3 === 0 ? 'direct and data-driven' : i % 3 === 1 ? 'diplomatic and consensus-building' : 'skeptical and questioning',
+      expertise: [roles[i % roles.length].split(' ')[0], 'Strategy'],
+      motivations: 'Professional growth and organizational success',
+      x: 100 + Math.random() * 700,
+      y: 100 + Math.random() * 500,
+      connections: [],
+      state: 'idle',
+      sentiment: Math.max(-1, Math.min(1, sentiment)),
+      influence: 0.3 + Math.random() * 0.5,
+      memory: {
+        postsSeen: [],
+        interactions: [],
+        sentimentHistory: [{ round: 0, sentiment: Math.max(-1, Math.min(1, sentiment)) }]
+      }
     }
-  }))
+  })
 }
 
 /**
@@ -351,7 +406,18 @@ async function runSimulationRound(
     )
 
     // Decide and execute action
-    const action = await decideAgentAction(agent, state, unseenPosts, config, round, topics)
+    let action: AgentAction
+    
+    if (USE_MOCK_MODE) {
+      action = generateFallbackAction(agent, unseenPosts, round)
+    } else {
+      try {
+        action = await decideAgentAction(agent, state, unseenPosts, config, round, topics)
+      } catch (error) {
+        console.warn(`[Simulation] Failed to get action for ${agent.name}, using fallback:`, error)
+        action = generateFallbackAction(agent, unseenPosts, round)
+      }
+    }
     
     if (action.action !== 'DO_NOTHING') {
       actions.push(action)
@@ -554,6 +620,9 @@ For COMMENT: React to a specific post above - agree, disagree, or add perspectiv
 For LIKE_POST: target a post you genuinely agree with.
 For FOLLOW: target an agent whose views align with yours or who posted insightful content.`
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout per agent decision
+
   try {
     const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -570,7 +639,10 @@ For FOLLOW: target an agent whose views align with yours or who posted insightfu
         temperature: 0.8,
         max_tokens: 400,
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       throw new Error(`Kimi API error: ${response.status}`)
@@ -590,7 +662,6 @@ For FOLLOW: target an agent whose views align with yours or who posted insightfu
     try {
       decision = JSON.parse(jsonStr)
     } catch {
-      // Fallback if JSON parsing fails
       return generateFallbackAction(agent, unseenPosts, round)
     }
 
@@ -611,8 +682,8 @@ For FOLLOW: target an agent whose views align with yours or who posted insightfu
     }
 
   } catch (error) {
-    console.error(`Error deciding action for ${agent.name}:`, error)
-    return generateFallbackAction(agent, unseenPosts, round)
+    clearTimeout(timeoutId)
+    throw error
   }
 }
 
@@ -968,6 +1039,9 @@ Return ONLY valid JSON:
   "predictions": ["string - prediction 1", "string - prediction 2", "string - prediction 3", "string - prediction 4"]
 }`
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
   try {
     const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -984,7 +1058,10 @@ Return ONLY valid JSON:
         temperature: 0.8,
         max_tokens: 1200,
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       throw new Error(`Kimi API error: ${response.status}`)
@@ -1007,12 +1084,8 @@ Return ONLY valid JSON:
     }
 
   } catch (error) {
-    console.error('Error generating analysis:', error)
-    
-    return {
-      summary: generateFallbackSummary(state, avgSentiment, positiveAgents, negativeAgents),
-      predictions: generateFallbackPredictions(state, avgSentiment, topInfluencers)
-    }
+    clearTimeout(timeoutId)
+    throw error
   }
 }
 

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     
     errors.push(`KIMI_API_KEY loaded: ${apiKey.substring(0, 12)}... (length: ${apiKey.length})`)
     errors.push(`Using model: ${KIMI_MODEL}`)
+    errors.push(`Using API: ${KIMI_BASE_URL}`)
 
     // Validate Supabase service role key
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -88,6 +89,8 @@ export async function POST(request: NextRequest) {
     try {
       // Run the actual multi-agent simulation
       console.log('[API] Starting simulation engine...')
+      console.log('[API] Using API URL:', KIMI_BASE_URL)
+      
       const simulationResults = await runSimulation({
         agentCount: DEFAULT_AGENT_COUNT,
         rounds: DEFAULT_ROUNDS,
@@ -251,7 +254,7 @@ export async function POST(request: NextRequest) {
         predictions: simulationResults.predictions,
       })
 
-    } catch (error) {
+    } catch (simError) {
       // Update scenario status to failed
       await supabaseAdmin
         .from('mirofish_scenarios')
@@ -261,7 +264,12 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', scenario.id)
 
-      throw error
+      // Add simulation error details
+      if (simError instanceof Error) {
+        errors.push(`Simulation error: ${simError.message}`)
+      }
+      
+      throw simError
     }
 
   } catch (error) {
