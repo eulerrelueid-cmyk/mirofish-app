@@ -3,13 +3,26 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
+// Create a mock client for build time when env vars are not available
+const createMockClient = () => {
+  return {
+    from: () => ({
+      insert: () => ({ select: () => ({ single: () => ({ data: { id: 'mock-id' }, error: null }) }) }),
+      update: () => ({ eq: () => ({ error: null }) }),
+      select: () => ({ eq: () => ({ order: () => ({ data: [], error: null }) }) }),
+    }),
+  } as any
+}
+
 // Service role client bypasses RLS - use ONLY in server-side API routes
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})
+export const supabaseAdmin = supabaseUrl && serviceRoleKey 
+  ? createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : createMockClient()
 
 // Database types for MiroFish tables
 export type Database = {

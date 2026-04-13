@@ -42,10 +42,57 @@ CREATE TABLE IF NOT EXISTS mirofish_events (
   scenario_id UUID NOT NULL REFERENCES mirofish_scenarios(id) ON DELETE CASCADE,
   event_id TEXT NOT NULL,
   timestamp TIMESTAMPTZ NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('interaction', 'sentiment_shift', 'emergence', 'milestone')),
+  type TEXT NOT NULL CHECK (type IN ('interaction', 'sentiment_shift', 'emergence', 'milestone', 'post_viral', 'consensus', 'conflict')),
   description TEXT NOT NULL,
   agents_involved TEXT[] DEFAULT '{}',
   impact FLOAT NOT NULL,
+  round INTEGER NOT NULL DEFAULT 0,
+  related_post_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- MiroFish Posts table (agent posts/content)
+CREATE TABLE IF NOT EXISTS mirofish_posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  scenario_id UUID NOT NULL REFERENCES mirofish_scenarios(id) ON DELETE CASCADE,
+  post_id TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  agent_name TEXT NOT NULL,
+  agent_role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL,
+  round INTEGER NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('twitter', 'reddit')),
+  sentiment FLOAT NOT NULL DEFAULT 0,
+  engagement FLOAT NOT NULL DEFAULT 0,
+  likes TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- MiroFish Comments table (comments on posts)
+CREATE TABLE IF NOT EXISTS mirofish_comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  scenario_id UUID NOT NULL REFERENCES mirofish_scenarios(id) ON DELETE CASCADE,
+  comment_id TEXT NOT NULL,
+  post_id TEXT NOT NULL REFERENCES mirofish_posts(post_id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL,
+  agent_name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL,
+  round INTEGER NOT NULL,
+  likes TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- MiroFish Simulation Rounds table (tracking each simulation round)
+CREATE TABLE IF NOT EXISTS mirofish_rounds (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  scenario_id UUID NOT NULL REFERENCES mirofish_scenarios(id) ON DELETE CASCADE,
+  round INTEGER NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL,
+  actions JSONB NOT NULL DEFAULT '[]'::jsonb,
+  sentiment_changes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  new_connections JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -68,6 +115,11 @@ CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_created_at ON mirofish_scenari
 CREATE INDEX IF NOT EXISTS idx_mirofish_agents_scenario_id ON mirofish_agents(scenario_id);
 CREATE INDEX IF NOT EXISTS idx_mirofish_events_scenario_id ON mirofish_events(scenario_id);
 CREATE INDEX IF NOT EXISTS idx_mirofish_events_timestamp ON mirofish_events(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_mirofish_posts_scenario_id ON mirofish_posts(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_mirofish_posts_round ON mirofish_posts(round);
+CREATE INDEX IF NOT EXISTS idx_mirofish_posts_agent_id ON mirofish_posts(agent_id);
+CREATE INDEX IF NOT EXISTS idx_mirofish_comments_post_id ON mirofish_comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_mirofish_rounds_scenario_id ON mirofish_rounds(scenario_id);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION mirofish_update_updated_at_column()
@@ -96,6 +148,9 @@ CREATE TRIGGER mirofish_update_user_settings_updated_at
 ALTER TABLE mirofish_scenarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mirofish_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mirofish_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mirofish_rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_user_settings ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for mirofish_scenarios
@@ -179,6 +234,81 @@ CREATE POLICY "Users can update own settings" ON mirofish_user_settings
   FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policies for mirofish_posts
+CREATE POLICY "Users can view posts for own scenarios" ON mirofish_posts
+  FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_posts.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can insert posts for own scenarios" ON mirofish_posts
+  FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_posts.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can delete posts for own scenarios" ON mirofish_posts
+  FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_posts.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+-- RLS Policies for mirofish_comments
+CREATE POLICY "Users can view comments for own scenarios" ON mirofish_comments
+  FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_comments.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can insert comments for own scenarios" ON mirofish_comments
+  FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_comments.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can delete comments for own scenarios" ON mirofish_comments
+  FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_comments.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+-- RLS Policies for mirofish_rounds
+CREATE POLICY "Users can view rounds for own scenarios" ON mirofish_rounds
+  FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_rounds.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can insert rounds for own scenarios" ON mirofish_rounds
+  FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_rounds.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can delete rounds for own scenarios" ON mirofish_rounds
+  FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM mirofish_scenarios s 
+    WHERE s.id = mirofish_rounds.scenario_id 
+    AND s.user_id = auth.uid()
+  ));
 
 -- Create storage bucket for mirofish file uploads
 INSERT INTO storage.buckets (id, name, public) 
