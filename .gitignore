@@ -7,3 +7,5 @@ out/
 .DS_Store
 coverage/
 .vercel
+.env.vercel
+supabase/.temp/

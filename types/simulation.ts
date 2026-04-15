@@ -110,6 +110,7 @@ export interface SimulationScenario {
   status: 'pending' | 'running' | 'completed' | 'failed'
   createdAt: Date
   updatedAt: Date
+  mockMode?: boolean
   parameters: {
     agentCount: number
     simulationRounds: number

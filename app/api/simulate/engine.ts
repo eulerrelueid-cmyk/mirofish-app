@@ -22,7 +22,8 @@ import {
 
 const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.cn/v1'
 const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2.5'
-const USE_MOCK_MODE = process.env.USE_MOCK_SIMULATION === 'true'
+const FORCE_MOCK_ON_VERCEL = process.env.VERCEL === '1' && process.env.USE_MOCK_SIMULATION !== 'false'
+const USE_MOCK_MODE = process.env.USE_MOCK_SIMULATION === 'true' || FORCE_MOCK_ON_VERCEL
 
 interface SimulationConfig {
   agentCount: number

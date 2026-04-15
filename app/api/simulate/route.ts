@@ -8,6 +8,7 @@ const DEFAULT_ROUNDS = 12
 // Kimi API configuration
 const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.cn/v1'
 const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2.5'
+const IS_MOCK_MODE = process.env.USE_MOCK_SIMULATION === 'true' || (process.env.VERCEL === '1' && process.env.USE_MOCK_SIMULATION !== 'false')
 
 export async function POST(request: NextRequest) {
   const errors: string[] = []
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
 
       if (agentsError) {
         console.error('Error saving agents:', agentsError)
-        throw new Error('Failed to save agents')
+        errors.push(`Failed to save agents: ${agentsError.message}`)
       }
 
       // Save posts to database
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
 
       if (postsError) {
         console.error('Error saving posts:', postsError)
-        throw new Error('Failed to save posts')
+        errors.push(`Failed to save posts: ${postsError.message}`)
       }
 
       // Save comments to database
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
 
       if (eventsError) {
         console.error('Error saving events:', eventsError)
-        throw new Error('Failed to save events')
+        errors.push(`Failed to save events: ${eventsError.message}`)
       }
 
       // Save rounds to database
@@ -239,10 +240,10 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('Error updating scenario:', updateError)
-        throw new Error('Failed to update scenario')
+        errors.push(`Failed to update scenario: ${updateError.message}`)
       }
 
-      console.log('[API] Simulation saved successfully!')
+      console.log('[API] Simulation complete!')
 
       return NextResponse.json({
         scenarioId: scenario.id,
@@ -252,6 +253,8 @@ export async function POST(request: NextRequest) {
         rounds: simulationResults.rounds,
         summary: simulationResults.summary,
         predictions: simulationResults.predictions,
+        warnings: errors.length > 0 ? errors : undefined,
+        mockMode: IS_MOCK_MODE,
       })
 
     } catch (simError) {

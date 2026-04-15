@@ -69,6 +69,7 @@ export default function Home() {
       setCurrentScenario({
         ...scenario,
         status: 'completed',
+        mockMode: data.mockMode,
         results: {
           agents: data.agents,
           events: data.events,
@@ -135,7 +136,23 @@ export default function Home() {
         {error && (
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-red-500/20 border border-red-500/50 text-red-400 text-sm sm:text-base">
             <p className="font-semibold">Error: {error}</p>
-            <p className="text-xs sm:text-sm mt-1">Please check your Kimi API configuration and try again.</p>
+            <p className="text-xs sm:text-sm mt-1">
+              {error.toLowerCase().includes('kimi')
+                ? 'Please check your Kimi API configuration and try again.'
+                : error.toLowerCase().includes('database') || error.toLowerCase().includes('save')
+                ? 'A database error occurred. Results may not be persisted.'
+                : 'An unexpected error occurred. Please try again.'}
+            </p>
+          </div>
+        )}
+
+        {/* Mock Mode Notice */}
+        {currentScenario?.mockMode && (
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm sm:text-base">
+            <p className="font-semibold">⚡ Fast Mode Active</p>
+            <p className="text-xs sm:text-sm mt-1">
+              Running in template mode to stay within serverless limits. Set <code>USE_MOCK_SIMULATION=false</code> to enable full LLM generation (requires Pro deployment or background worker).
+            </p>
           </div>
         )}
 
