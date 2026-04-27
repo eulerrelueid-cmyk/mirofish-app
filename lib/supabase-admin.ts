@@ -9,7 +9,13 @@ const createMockClient = () => {
     from: () => ({
       insert: () => ({ select: () => ({ single: () => ({ data: { id: 'mock-id' }, error: null }) }) }),
       update: () => ({ eq: () => ({ error: null }) }),
-      select: () => ({ eq: () => ({ order: () => ({ data: [], error: null }) }) }),
+      select: () => ({
+        eq: () => ({
+          eq: () => ({ single: () => ({ data: null, error: { message: 'Mock client has no rows' } }) }),
+          order: () => ({ data: [], error: null }),
+          single: () => ({ data: null, error: { message: 'Mock client has no rows' } }),
+        }),
+      }),
     }),
   } as any
 }
@@ -35,6 +41,7 @@ export type Database = {
           description: string
           seed_text: string | null
           uploaded_file: object | null
+          owner_token_hash: string | null
           status: string
           created_at: string
           updated_at: string
@@ -48,6 +55,7 @@ export type Database = {
           description: string
           seed_text?: string | null
           uploaded_file?: object | null
+          owner_token_hash?: string | null
           status?: string
           created_at?: string
           updated_at?: string
@@ -61,6 +69,7 @@ export type Database = {
           description?: string
           seed_text?: string | null
           uploaded_file?: object | null
+          owner_token_hash?: string | null
           status?: string
           created_at?: string
           updated_at?: string

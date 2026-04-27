@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS mirofish_scenarios (
   description TEXT NOT NULL,
   seed_text TEXT,
   uploaded_file JSONB,
+  owner_token_hash TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -110,6 +111,7 @@ CREATE TABLE IF NOT EXISTS mirofish_user_settings (
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_user_id ON mirofish_scenarios(user_id);
+CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_owner_token_hash ON mirofish_scenarios(owner_token_hash);
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_status ON mirofish_scenarios(status);
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_created_at ON mirofish_scenarios(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mirofish_agents_scenario_id ON mirofish_agents(scenario_id);

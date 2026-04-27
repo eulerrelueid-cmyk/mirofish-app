@@ -111,19 +111,34 @@ export interface SimulationScenario {
   createdAt: Date
   updatedAt: Date
   mockMode?: boolean
+  workflowRunId?: string
+  errorMessage?: string
+  progress?: SimulationProgressState
   parameters: {
     agentCount: number
     simulationRounds: number
     temperature: number
   }
-  results?: {
-    agents: SimulationAgent[]
-    events: SimulationEvent[]
-    posts: SimulationPost[]
-    rounds: SimulationRound[]
-    summary: string
-    predictions: string[]
-  }
+  results?: SimulationScenarioResults
+}
+
+export interface SimulationScenarioResults {
+  agents: SimulationAgent[]
+  events: SimulationEvent[]
+  posts: SimulationPost[]
+  rounds: SimulationRound[]
+  summary: string
+  predictions: string[]
+}
+
+export interface SimulationProgressState {
+  stage: 'queued' | 'initializing' | 'running' | 'analyzing' | 'persisting' | 'completed' | 'failed'
+  message: string
+  currentRound?: number
+  totalRounds?: number
+  postsCount?: number
+  eventsCount?: number
+  updatedAt: string
 }
 
 export interface SimulationStats {
@@ -146,4 +161,24 @@ export interface SocialFeedItem {
   type: 'post' | 'event'
   timestamp: Date
   data: SimulationPost | SimulationEvent
+}
+
+export interface SimulationHistoryItem {
+  id: string
+  title: string
+  description: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  createdAt: Date
+  updatedAt: Date
+  mockMode?: boolean
+  workflowRunId?: string
+  errorMessage?: string
+  progress?: SimulationProgressState
+  summaryExcerpt?: string
+  resultCounts: {
+    agents: number
+    posts: number
+    events: number
+    rounds: number
+  } | null
 }

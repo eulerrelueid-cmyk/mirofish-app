@@ -30,11 +30,15 @@ npm install
 
 ### 2. Environment Variables
 
-Create `.env.local`:
+Use [context/env-reference.md](context/env-reference.md) as the canonical config guide.
+
+Create `.env.local` from `.env.local.example`:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+KIMI_API_KEY=your_kimi_api_key
 ```
 
 ### 3. Run Locally

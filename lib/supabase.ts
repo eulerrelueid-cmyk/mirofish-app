@@ -16,6 +16,7 @@ export type Database = {
           description: string
           seed_text: string | null
           uploaded_file: object | null
+          owner_token_hash: string | null
           status: string
           created_at: string
           updated_at: string
@@ -29,6 +30,7 @@ export type Database = {
           description: string
           seed_text?: string | null
           uploaded_file?: object | null
+          owner_token_hash?: string | null
           status?: string
           created_at?: string
           updated_at?: string
@@ -42,6 +44,7 @@ export type Database = {
           description?: string
           seed_text?: string | null
           uploaded_file?: object | null
+          owner_token_hash?: string | null
           status?: string
           created_at?: string
           updated_at?: string

@@ -3,28 +3,72 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 10, 10, 15;
-  --background-end-rgb: 19, 19, 31;
+  color-scheme: dark;
+  --foreground-rgb: 239, 246, 251;
+  --background-base: #07131d;
+  --background-deep: #0d1c28;
+  --background-warm: #142d36;
+  --panel: rgba(12, 27, 38, 0.68);
+  --panel-strong: rgba(10, 22, 32, 0.88);
+  --border: rgba(190, 219, 233, 0.14);
+  --border-strong: rgba(242, 221, 180, 0.22);
+  --shadow: 0 22px 80px rgba(0, 0, 0, 0.32);
+  --accent: #72e0c5;
+  --accent-soft: rgba(114, 224, 197, 0.18);
+  --glow: #f3b35f;
+  --glow-soft: rgba(243, 179, 95, 0.18);
+  --sky: #5fc5ff;
 }
 
 * {
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--background-start-rgb)),
-    rgb(var(--background-end-rgb))
-  );
+  background:
+    radial-gradient(circle at top left, rgba(114, 224, 197, 0.18), transparent 30%),
+    radial-gradient(circle at top right, rgba(243, 179, 95, 0.12), transparent 34%),
+    linear-gradient(180deg, var(--background-base) 0%, var(--background-deep) 52%, #091621 100%);
   min-height: 100vh;
   overflow-x: hidden;
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  overscroll-behavior-y: none;
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+body::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 88%);
+  opacity: 0.14;
+}
+
+body::after {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(114, 224, 197, 0.18), transparent 24%),
+    radial-gradient(circle at 78% 16%, rgba(243, 179, 95, 0.16), transparent 20%),
+    radial-gradient(circle at 50% 100%, rgba(95, 197, 255, 0.12), transparent 28%);
+  filter: blur(56px);
+  opacity: 0.9;
 }
 
 @layer utilities {
@@ -34,14 +78,19 @@ body {
 }
 
 .glass-panel {
-  background: rgba(19, 19, 31, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(19, 37, 49, 0.92), rgba(10, 24, 34, 0.82)),
+    var(--panel);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .glow-border {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3),
-              0 0 40px rgba(139, 92, 246, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
 .agent-node {
@@ -51,6 +100,85 @@ body {
 .agent-node:hover {
   transform: scale(1.2);
   filter: brightness(1.3);
+}
+
+.hero-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(114, 224, 197, 0.22), transparent 24%),
+    radial-gradient(circle at 90% 18%, rgba(243, 179, 95, 0.22), transparent 22%),
+    linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 38%);
+  pointer-events: none;
+}
+
+.hero-shell::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(223, 233, 242, 0.88);
+  font-size: 0.72rem;
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.section-label::before {
+  content: '';
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent), var(--glow));
+  box-shadow: 0 0 16px rgba(114, 224, 197, 0.45);
+}
+
+.panel-muted {
+  background: linear-gradient(180deg, rgba(13, 29, 40, 0.88), rgba(9, 21, 31, 0.72));
+  border: 1px solid rgba(223, 233, 242, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.surface-border {
+  border: 1px solid rgba(242, 221, 180, 0.12);
+}
+
+.mesh-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mesh-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 34%),
+    radial-gradient(circle at top right, rgba(114, 224, 197, 0.16), transparent 28%);
+  pointer-events: none;
+}
+
+.metric-sheen {
+  background-image: linear-gradient(100deg, transparent 15%, rgba(255, 255, 255, 0.18) 50%, transparent 85%);
+  background-size: 220% 100%;
 }
 
 /* Custom scrollbar - hidden on mobile */
@@ -67,26 +195,30 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.5);
+  background: linear-gradient(180deg, rgba(114, 224, 197, 0.72), rgba(243, 179, 95, 0.72));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.7);
+  background: linear-gradient(180deg, rgba(114, 224, 197, 0.92), rgba(243, 179, 95, 0.92));
 }
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
   .glass-panel {
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(14px);
   }
-  
-  .glow-border {
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+
+  body::before {
+    background-size: 56px 56px;
+  }
+
+  .section-label {
+    letter-spacing: 0.08em;
   }
 }
 
@@ -109,7 +241,10 @@ input, textarea {
   }
 }
 
-/* Prevent pull-to-refresh on mobile */
-body {
-  overscroll-behavior-y: none;
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
 }

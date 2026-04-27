@@ -20,10 +20,33 @@ import {
   AgentMemory,
 } from '@/types/simulation'
 
-const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.cn/v1'
+const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.ai/v1'
 const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2.5'
-const FORCE_MOCK_ON_VERCEL = process.env.VERCEL === '1' && process.env.USE_MOCK_SIMULATION !== 'false'
-const USE_MOCK_MODE = process.env.USE_MOCK_SIMULATION === 'true' || FORCE_MOCK_ON_VERCEL
+const USE_MOCK_MODE = process.env.USE_MOCK_SIMULATION === 'true'
+
+export const IS_MOCK_MODE = USE_MOCK_MODE
+
+interface KimiMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
+interface KimiCompletionOptions {
+  apiKey: string
+  messages: KimiMessage[]
+  temperature: number
+  maxTokens: number
+  timeoutMs: number
+}
+
+export interface SimulationProgressUpdate {
+  stage: 'initializing' | 'running' | 'analyzing' | 'completed'
+  message: string
+  currentRound?: number
+  totalRounds?: number
+  postsCount?: number
+  eventsCount?: number
+}
 
 interface SimulationConfig {
   agentCount: number
@@ -32,6 +55,7 @@ interface SimulationConfig {
   scenarioTitle: string
   scenarioDescription: string
   seedText?: string
+  onProgress?: (progress: SimulationProgressUpdate) => Promise<void> | void
 }
 
 interface SimulationState {
@@ -124,6 +148,13 @@ export async function runSimulation(config: SimulationConfig): Promise<{
   console.log(`[Simulation] Starting: ${config.scenarioTitle}`)
   console.log(`[Simulation] Config: ${config.agentCount} agents, ${config.rounds} rounds`)
   console.log(`[Simulation] Mock mode: ${USE_MOCK_MODE}`)
+  await config.onProgress?.({
+    stage: 'initializing',
+    message: 'Generating agent personas',
+    totalRounds: config.rounds,
+    postsCount: 0,
+    eventsCount: 0,
+  })
 
   // Step 1: Generate rich agent personas
   console.log('[Simulation] Generating agent personas...')
@@ -146,6 +177,15 @@ export async function runSimulation(config: SimulationConfig): Promise<{
     state.agentOpinions.set(agent.id, new Map())
   })
 
+  await config.onProgress?.({
+    stage: 'running',
+    message: 'Running simulation rounds',
+    currentRound: 0,
+    totalRounds: config.rounds,
+    postsCount: state.posts.length,
+    eventsCount: state.events.length,
+  })
+
   // Step 2: Run simulation rounds
   for (let round = 1; round <= config.rounds; round++) {
     state.currentRound = round
@@ -163,6 +203,15 @@ export async function runSimulation(config: SimulationConfig): Promise<{
       if (round % 3 === 0) {
         updateTrendingTopics(state)
       }
+
+      await config.onProgress?.({
+        stage: 'running',
+        message: `Completed round ${round} of ${config.rounds}`,
+        currentRound: round,
+        totalRounds: config.rounds,
+        postsCount: state.posts.length,
+        eventsCount: state.events.length,
+      })
     } catch (error) {
       console.error(`[Simulation] Error in round ${round}:`, error)
       // Continue with next round rather than failing completely
@@ -171,6 +220,14 @@ export async function runSimulation(config: SimulationConfig): Promise<{
 
   // Step 3: Generate comprehensive analysis
   console.log('[Simulation] Generating final analysis...')
+  await config.onProgress?.({
+    stage: 'analyzing',
+    message: 'Generating final analysis',
+    currentRound: config.rounds,
+    totalRounds: config.rounds,
+    postsCount: state.posts.length,
+    eventsCount: state.events.length,
+  })
   let summary: string
   let predictions: string[]
   
@@ -199,6 +256,15 @@ export async function runSimulation(config: SimulationConfig): Promise<{
 
   console.log('[Simulation] Complete!')
   console.log(`[Simulation] Final: ${state.posts.length} posts, ${state.events.length} events`)
+
+  await config.onProgress?.({
+    stage: 'completed',
+    message: 'Simulation complete',
+    currentRound: config.rounds,
+    totalRounds: config.rounds,
+    postsCount: state.posts.length,
+    eventsCount: state.events.length,
+  })
 
   return {
     agents: state.agents,
@@ -255,36 +321,17 @@ Return ONLY a valid JSON array with this structure:
 
 Make each agent feel like a real person with a credible professional background.`
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-
   try {
-    const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: KIMI_MODEL,
-        messages: [
-          { role: 'system', content: 'You are a persona generation engine for social simulations. Create diverse, realistic professional personas. Return only valid JSON.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.9,
-        max_tokens: 4000,
-      }),
-      signal: controller.signal,
+    const data = await requestKimiChatCompletion({
+      apiKey: config.apiKey,
+      messages: [
+        { role: 'system', content: 'You are a persona generation engine for social simulations. Create diverse, realistic professional personas. Return only valid JSON.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.9,
+      maxTokens: 4000,
+      timeoutMs: 30000,
     })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Kimi API error: ${response.status} - ${errorText}`)
-    }
-
-    const data = await response.json()
     const content = data.choices[0]?.message?.content
     
     if (!content) {
@@ -330,7 +377,6 @@ Make each agent feel like a real person with a credible professional background.
       }
     }))
   } catch (error) {
-    clearTimeout(timeoutId)
     throw error
   }
 }
@@ -395,31 +441,40 @@ async function runSimulationRound(
   // Shuffle agents for turn order (randomizes who acts first)
   const shuffledAgents = [...state.agents].sort(() => Math.random() - 0.5)
 
-  // Each agent takes a turn
-  for (const agent of shuffledAgents) {
-    // Skip some agents naturally (not everyone posts every round)
-    if (Math.random() < 0.35) continue
-
-    // Get posts this agent hasn't seen
-    const unseenPosts = recentPosts.filter(p => 
-      p.agentId !== agent.id && 
-      !agent.memory?.postsSeen.includes(p.id)
-    )
-
-    // Decide and execute action
-    let action: AgentAction
-    
-    if (USE_MOCK_MODE) {
-      action = generateFallbackAction(agent, unseenPosts, round)
-    } else {
-      try {
-        action = await decideAgentAction(agent, state, unseenPosts, config, round, topics)
-      } catch (error) {
-        console.warn(`[Simulation] Failed to get action for ${agent.name}, using fallback:`, error)
-        action = generateFallbackAction(agent, unseenPosts, round)
+  const decisionResults = await Promise.all(
+    shuffledAgents.map(async (agent) => {
+      if (Math.random() < 0.35) {
+        return null
       }
+
+      const unseenPosts = recentPosts.filter((post) =>
+        post.agentId !== agent.id && !agent.memory?.postsSeen.includes(post.id)
+      )
+
+      let action: AgentAction
+
+      if (USE_MOCK_MODE) {
+        action = generateFallbackAction(agent, unseenPosts, round)
+      } else {
+        try {
+          action = await decideAgentAction(agent, state, unseenPosts, config, round, topics)
+        } catch (error) {
+          console.warn(`[Simulation] Failed to get action for ${agent.name}, using fallback:`, error)
+          action = generateFallbackAction(agent, unseenPosts, round)
+        }
+      }
+
+      return { agent, action }
+    })
+  )
+
+  for (const decision of decisionResults) {
+    if (!decision) {
+      continue
     }
-    
+
+    const { agent, action } = decision
+
     if (action.action !== 'DO_NOTHING') {
       actions.push(action)
       
@@ -530,7 +585,6 @@ async function runSimulationRound(
       }
     }
     
-    // Update sentiment history periodically
     if (agent.memory && round % 3 === 0) {
       agent.memory.sentimentHistory.push({ round, sentiment: agent.sentiment })
     }
@@ -621,35 +675,17 @@ For COMMENT: React to a specific post above - agree, disagree, or add perspectiv
 For LIKE_POST: target a post you genuinely agree with.
 For FOLLOW: target an agent whose views align with yours or who posted insightful content.`
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout per agent decision
-
   try {
-    const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: KIMI_MODEL,
-        messages: [
-          { role: 'system', content: `You are ${agent.name}. Stay in character. Be authentic to your personality and stance.` },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.8,
-        max_tokens: 400,
-      }),
-      signal: controller.signal,
+    const data = await requestKimiChatCompletion({
+      apiKey: config.apiKey,
+      messages: [
+        { role: 'system', content: `You are ${agent.name}. Stay in character. Be authentic to your personality and stance.` },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.8,
+      maxTokens: 400,
+      timeoutMs: 15000,
     })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      throw new Error(`Kimi API error: ${response.status}`)
-    }
-
-    const data = await response.json()
     const content = data.choices[0]?.message?.content
     
     if (!content) {
@@ -683,7 +719,6 @@ For FOLLOW: target an agent whose views align with yours or who posted insightfu
     }
 
   } catch (error) {
-    clearTimeout(timeoutId)
     throw error
   }
 }
@@ -1040,35 +1075,17 @@ Return ONLY valid JSON:
   "predictions": ["string - prediction 1", "string - prediction 2", "string - prediction 3", "string - prediction 4"]
 }`
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-
   try {
-    const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: KIMI_MODEL,
-        messages: [
-          { role: 'system', content: 'You are a strategic analyst interpreting multi-agent social simulation results. Provide actionable insights.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.8,
-        max_tokens: 1200,
-      }),
-      signal: controller.signal,
+    const data = await requestKimiChatCompletion({
+      apiKey: config.apiKey,
+      messages: [
+        { role: 'system', content: 'You are a strategic analyst interpreting multi-agent social simulation results. Provide actionable insights.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.8,
+      maxTokens: 1200,
+      timeoutMs: 30000,
     })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      throw new Error(`Kimi API error: ${response.status}`)
-    }
-
-    const data = await response.json()
     const content = data.choices[0]?.message?.content
     
     if (!content) {
@@ -1085,9 +1102,75 @@ Return ONLY valid JSON:
     }
 
   } catch (error) {
-    clearTimeout(timeoutId)
     throw error
   }
+}
+
+async function requestKimiChatCompletion(options: KimiCompletionOptions) {
+  const maxAttempts = 3
+  const temperature = getKimiTemperature(options.temperature)
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs)
+
+    try {
+      const response = await fetch(`${KIMI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${options.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: KIMI_MODEL,
+          messages: options.messages,
+          temperature,
+          max_tokens: options.maxTokens,
+        }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const body = await response.text()
+        const retryable = response.status === 429 || response.status >= 500
+        if (retryable && attempt < maxAttempts) {
+          await sleepFor(500 * attempt)
+          continue
+        }
+        throw new Error(`Kimi API error: ${response.status} - ${body}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      clearTimeout(timeoutId)
+
+      const isAbortError = error instanceof Error && error.name === 'AbortError'
+      const isRetryable = isAbortError || (error instanceof Error && /fetch failed|ECONNRESET|ETIMEDOUT/i.test(error.message))
+
+      if (isRetryable && attempt < maxAttempts) {
+        await sleepFor(500 * attempt)
+        continue
+      }
+
+      throw error
+    }
+  }
+
+  throw new Error('Kimi API request failed after retries')
+}
+
+function getKimiTemperature(requestedTemperature: number) {
+  if (KIMI_MODEL === 'kimi-k2.5') {
+    return 1
+  }
+
+  return requestedTemperature
+}
+
+function sleepFor(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**

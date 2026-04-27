@@ -1,12 +1,21 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { IBM_Plex_Mono, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display',
+})
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+})
 
 export const metadata: Metadata = {
-  title: 'MiroFish - Multi-Agent Social Simulation',
-  description: 'Watch AI agents with distinct personas discuss, debate, and form opinions on your scenarios',
+  title: 'MiroFish | Scenario Intelligence Studio',
+  description: 'Shape a scenario, launch a multi-agent social simulation, and track how opinions, signals, and consensus emerge.',
 }
 
 export const viewport: Viewport = {
@@ -14,7 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#0a0a0f',
+  themeColor: '#07131d',
 }
 
 export default function RootLayout({
@@ -24,7 +33,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }

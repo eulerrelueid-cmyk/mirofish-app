@@ -1,3 +1,5 @@
+const { withWorkflow } = require('workflow/next')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -6,4 +8,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withWorkflow(nextConfig)
