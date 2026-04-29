@@ -15,7 +15,9 @@ import {
   SimulationPost, 
   SimulationComment,
   SimulationEvent, 
+  SimulationReport,
   SimulationRound,
+  SimulationWorldBrief,
   AgentAction,
   AgentMemory,
 } from '@/types/simulation'
@@ -134,6 +136,8 @@ export async function runSimulation(config: SimulationConfig): Promise<{
   rounds: SimulationRound[]
   summary: string
   predictions: string[]
+  brief: SimulationWorldBrief
+  report: SimulationReport
 }> {
   const state: SimulationState = {
     agents: [],
@@ -228,8 +232,10 @@ export async function runSimulation(config: SimulationConfig): Promise<{
     postsCount: state.posts.length,
     eventsCount: state.events.length,
   })
+  const brief = buildSimulationBrief(config)
   let summary: string
   let predictions: string[]
+  let report: SimulationReport
   
   if (USE_MOCK_MODE) {
     const avgSentiment = state.agents.reduce((acc, a) => acc + a.sentiment, 0) / state.agents.length
@@ -238,11 +244,18 @@ export async function runSimulation(config: SimulationConfig): Promise<{
       state.agents.filter(a => a.sentiment < 0).length)
     predictions = generateFallbackPredictions(state, avgSentiment, 
       [...state.agents].sort((a, b) => b.influence - a.influence).slice(0, 5))
+    report = generateFallbackReport(
+      state,
+      avgSentiment,
+      [...state.agents].sort((a, b) => b.influence - a.influence).slice(0, 5),
+      brief
+    )
   } else {
     try {
-      const analysis = await generateAnalysis(state, config)
+      const analysis = await generateAnalysis(state, config, brief)
       summary = analysis.summary
       predictions = analysis.predictions
+      report = analysis.report
     } catch (error) {
       console.warn('[Simulation] Failed to generate analysis via API, using fallback:', error)
       const avgSentiment = state.agents.reduce((acc, a) => acc + a.sentiment, 0) / state.agents.length
@@ -251,6 +264,12 @@ export async function runSimulation(config: SimulationConfig): Promise<{
         state.agents.filter(a => a.sentiment < 0).length)
       predictions = generateFallbackPredictions(state, avgSentiment,
         [...state.agents].sort((a, b) => b.influence - a.influence).slice(0, 5))
+      report = generateFallbackReport(
+        state,
+        avgSentiment,
+        [...state.agents].sort((a, b) => b.influence - a.influence).slice(0, 5),
+        brief
+      )
     }
   }
 
@@ -272,7 +291,9 @@ export async function runSimulation(config: SimulationConfig): Promise<{
     events: state.events,
     rounds: state.rounds,
     summary,
-    predictions
+    predictions,
+    brief,
+    report,
   }
 }
 
@@ -1007,8 +1028,9 @@ function generateEventsFromRound(
  */
 async function generateAnalysis(
   state: SimulationState,
-  config: SimulationConfig
-): Promise<{ summary: string; predictions: string[] }> {
+  config: SimulationConfig,
+  brief: SimulationWorldBrief
+): Promise<{ summary: string; predictions: string[]; report: SimulationReport }> {
   const avgSentiment = state.agents.reduce((acc, a) => acc + a.sentiment, 0) / state.agents.length
   const positiveAgents = state.agents.filter(a => a.sentiment > 0.3).length
   const negativeAgents = state.agents.filter(a => a.sentiment < -0.3).length
@@ -1065,14 +1087,38 @@ SOCIAL DYNAMICS:
 - Total Connections Formed: ${state.rounds.reduce((acc, r) => acc + r.newConnections.length, 0)}
 - Trending Topics: ${state.trendingTopics.slice(0, 3).join(', ')}
 
+WORLD BRIEF:
+- Premise: ${brief.premise}
+- Objective: ${brief.objective}
+- Source Mode: ${brief.sourceMode}
+- Focus Areas: ${brief.focusAreas.join(', ')}
+
 Provide a strategic analysis:
 1. Executive Summary (2-3 sentences): What happened in this simulation? What does it reveal about how different stakeholders would react to this scenario?
 2. Four Specific Predictions: Based on the agent behaviors and sentiment shifts, what would likely happen if this scenario played out in reality?
+3. Structured Report:
+   - Executive verdict
+   - 3-4 key drivers
+   - 3-4 audience signals
+   - Platform readout for Twitter and Reddit
+   - 3-4 intervention ideas
+   - 3-4 watch signals
 
 Return ONLY valid JSON:
 {
   "summary": "string - executive summary",
-  "predictions": ["string - prediction 1", "string - prediction 2", "string - prediction 3", "string - prediction 4"]
+  "predictions": ["string - prediction 1", "string - prediction 2", "string - prediction 3", "string - prediction 4"],
+  "report": {
+    "executiveVerdict": "string",
+    "keyDrivers": ["string", "string", "string"],
+    "audienceSignals": ["string", "string", "string"],
+    "platformReadout": {
+      "twitter": "string",
+      "reddit": "string"
+    },
+    "interventionIdeas": ["string", "string", "string"],
+    "watchSignals": ["string", "string", "string"]
+  }
 }`
 
   try {
@@ -1098,7 +1144,8 @@ Return ONLY valid JSON:
 
     return {
       summary: analysis.summary || generateFallbackSummary(state, avgSentiment, positiveAgents, negativeAgents),
-      predictions: analysis.predictions || generateFallbackPredictions(state, avgSentiment, topInfluencers)
+      predictions: analysis.predictions || generateFallbackPredictions(state, avgSentiment, topInfluencers),
+      report: normalizeGeneratedReport(analysis.report) || generateFallbackReport(state, avgSentiment, topInfluencers, brief),
     }
 
   } catch (error) {
@@ -1161,6 +1208,62 @@ async function requestKimiChatCompletion(options: KimiCompletionOptions) {
   throw new Error('Kimi API request failed after retries')
 }
 
+function buildSimulationBrief(config: SimulationConfig): SimulationWorldBrief {
+  const combinedText = `${config.scenarioTitle} ${config.scenarioDescription} ${config.seedText || ''}`
+
+  return {
+    premise: config.scenarioTitle,
+    objective: config.scenarioDescription,
+    sourceMode: config.seedText ? 'grounded_upload' : 'prompt_only',
+    sourceReference: config.seedText ? 'Prompt + uploaded grounding' : undefined,
+    platforms: ['twitter', 'reddit'],
+    focusAreas: extractFocusAreas(combinedText),
+  }
+}
+
+function extractFocusAreas(value: string) {
+  const stopWords = new Set([
+    'about', 'across', 'after', 'against', 'among', 'around', 'because', 'before', 'between', 'could',
+    'describe', 'during', 'focus', 'from', 'have', 'into', 'likely', 'public', 'should', 'their', 'there',
+    'these', 'they', 'this', 'those', 'under', 'what', 'when', 'where', 'which', 'with', 'would', 'your',
+    'over', 'will', 'want',
+  ])
+
+  const counts = new Map<string, number>()
+  for (const token of value.toLowerCase().match(/[a-z][a-z-]{3,}/g) || []) {
+    if (stopWords.has(token)) {
+      continue
+    }
+
+    counts.set(token, (counts.get(token) || 0) + 1)
+  }
+
+  const focusAreas = Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([token]) => token)
+
+  return focusAreas.length > 0 ? focusAreas : ['sentiment', 'narrative', 'reaction']
+}
+
+function normalizeGeneratedReport(report: Partial<SimulationReport> | undefined): SimulationReport | null {
+  if (!report || typeof report.executiveVerdict !== 'string' || report.executiveVerdict.trim().length === 0) {
+    return null
+  }
+
+  return {
+    executiveVerdict: report.executiveVerdict,
+    keyDrivers: Array.isArray(report.keyDrivers) ? report.keyDrivers.filter(Boolean).slice(0, 4) : [],
+    audienceSignals: Array.isArray(report.audienceSignals) ? report.audienceSignals.filter(Boolean).slice(0, 4) : [],
+    platformReadout: {
+      twitter: report.platformReadout?.twitter || '',
+      reddit: report.platformReadout?.reddit || '',
+    },
+    interventionIdeas: Array.isArray(report.interventionIdeas) ? report.interventionIdeas.filter(Boolean).slice(0, 4) : [],
+    watchSignals: Array.isArray(report.watchSignals) ? report.watchSignals.filter(Boolean).slice(0, 4) : [],
+  }
+}
+
 function getKimiTemperature(requestedTemperature: number) {
   if (KIMI_MODEL === 'kimi-k2.5') {
     return 1
@@ -1206,4 +1309,44 @@ function generateFallbackPredictions(
     `${conflictEvents > consensusEvents ? 'Continued polarization' : 'Gradual consensus building'} expected based on interaction patterns.`,
     `External announcements or market conditions could significantly shift the current ${Math.abs(avgSentiment) > 0.3 ? 'established' : 'fluid'} sentiment.`
   ]
+}
+
+function generateFallbackReport(
+  state: SimulationState,
+  avgSentiment: number,
+  topInfluencers: SimulationAgent[],
+  brief: SimulationWorldBrief
+): SimulationReport {
+  const dominantDirection = avgSentiment >= 0 ? 'favorable' : 'adverse'
+  const totalComments = state.posts.reduce((acc, post) => acc + post.comments.length, 0)
+  const connectionCount = state.rounds.reduce((acc, round) => acc + round.newConnections.length, 0)
+  const topTopics = state.trendingTopics.slice(0, 3)
+
+  return {
+    executiveVerdict: `The simulated discourse settled into a ${dominantDirection} but still contestable narrative around ${brief.premise}.`,
+    keyDrivers: [
+      `${topInfluencers[0]?.name || 'A high-influence agent'} anchored much of the final narrative.`,
+      `${state.posts.length} posts and ${totalComments} comments created enough volume for visible coalition formation.`,
+      `${connectionCount} new ties changed how quickly frames traveled across the agent network.`,
+    ],
+    audienceSignals: [
+      `${state.agents.filter((agent) => agent.sentiment > 0.3).length} agents ended clearly positive.`,
+      `${state.agents.filter((agent) => agent.sentiment < -0.3).length} agents ended clearly negative.`,
+      `Dominant conversation areas: ${topTopics.length > 0 ? topTopics.join(', ') : 'no strong topic cluster emerged'}.`,
+    ],
+    platformReadout: {
+      twitter: 'Twitter-like behavior amplified sharper reactions, faster engagement loops, and more visible influence concentration.',
+      reddit: 'Reddit-like behavior favored deeper discussion threads and slower but more durable persuasion.',
+    },
+    interventionIdeas: [
+      'Seed a clear factual frame through the highest-trust agents before negative narratives compound.',
+      'Prepare targeted responses for the strongest counter-position rather than broadcasting a generic message.',
+      'Use the leading topics as the basis for follow-up messaging and monitoring.',
+    ],
+    watchSignals: [
+      'A sharp sentiment shift among neutral agents.',
+      'A new bridge forming between previously disconnected clusters.',
+      'Engagement concentrating around one dominant narrative post.',
+    ],
+  }
 }

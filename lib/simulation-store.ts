@@ -1,5 +1,12 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { SimulationAgent, SimulationEvent, SimulationPost, SimulationRound } from '@/types/simulation'
+import {
+  SimulationAgent,
+  SimulationEvent,
+  SimulationPost,
+  SimulationReport,
+  SimulationRound,
+  SimulationWorldBrief,
+} from '@/types/simulation'
 import { getScenarioLifecycleStatus, mergeScenarioMetadata, type RawScenarioMetadata } from '@/lib/simulation-contract'
 
 export interface PersistedSimulationResults {
@@ -9,6 +16,8 @@ export interface PersistedSimulationResults {
   rounds: SimulationRound[]
   summary: string
   predictions: string[]
+  brief?: SimulationWorldBrief
+  report?: SimulationReport
 }
 
 export interface SimulationProgress {

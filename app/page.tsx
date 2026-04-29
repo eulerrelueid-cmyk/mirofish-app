@@ -19,6 +19,7 @@ import { EventTimeline } from '@/components/EventTimeline'
 import { Header } from '@/components/Header'
 import { ScenarioHistory } from '@/components/ScenarioHistory'
 import { ScenarioInput } from '@/components/ScenarioInput'
+import { SimulationReportPanel } from '@/components/SimulationReportPanel'
 import SocialFeed from '@/components/SocialFeed'
 import { SimulationResults } from '@/components/SimulationResults'
 import { StatsPanel } from '@/components/StatsPanel'
@@ -37,7 +38,7 @@ const AGENT_COUNT = 15
 const SIMULATION_ROUNDS = 12
 
 type AppView = 'workspace' | 'history' | 'docs'
-type WorkspaceView = 'overview' | 'feed' | 'network' | 'events'
+type WorkspaceView = 'overview' | 'report' | 'feed' | 'network' | 'events'
 
 const workspaceTabs: Array<{
   id: WorkspaceView
@@ -45,6 +46,7 @@ const workspaceTabs: Array<{
   icon: typeof Sparkles
 }> = [
   { id: 'overview', label: 'Overview', icon: Sparkles },
+  { id: 'report', label: 'Report', icon: BookOpen },
   { id: 'feed', label: 'Feed', icon: MessageSquare },
   { id: 'network', label: 'Network', icon: Users },
   { id: 'events', label: 'Timeline', icon: Activity },
@@ -682,6 +684,8 @@ export default function Home() {
               <EventTimeline events={results.events} isLoading={isSimulating} />
             </div>
           )}
+
+          {activeWorkspaceView === 'report' && <SimulationReportPanel scenario={currentScenario} />}
 
           {activeWorkspaceView === 'network' && (
             <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">

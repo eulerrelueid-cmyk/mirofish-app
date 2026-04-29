@@ -133,6 +133,24 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
         mockMode: true,
         summary: 'The swarm converged around a single narrative.',
         predictions: ['Backlash risk remains low.'],
+        brief: {
+          premise: 'Completed run',
+          objective: 'Finished background worker',
+          sourceMode: 'prompt_only',
+          platforms: ['twitter', 'reddit'],
+          focusAreas: ['narrative', 'reaction'],
+        },
+        report: {
+          executiveVerdict: 'The narrative stabilized quickly.',
+          keyDrivers: ['Ava shaped the dominant frame.'],
+          audienceSignals: ['Neutral agents stayed persuadable.'],
+          platformReadout: {
+            twitter: 'Fast amplification.',
+            reddit: 'Slower but deeper debate.',
+          },
+          interventionIdeas: ['Publish a clear follow-up.'],
+          watchSignals: ['Neutral agents shifting negative.'],
+        },
         agents: [
           {
             id: 'agent_1',
@@ -204,6 +222,24 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
       mockMode: true,
       summary: 'The swarm converged around a single narrative.',
       predictions: ['Backlash risk remains low.'],
+      brief: {
+        premise: 'Completed run',
+        objective: 'Finished background worker',
+        sourceMode: 'prompt_only',
+        platforms: ['twitter', 'reddit'],
+        focusAreas: ['narrative', 'reaction'],
+      },
+      report: {
+        executiveVerdict: 'The narrative stabilized quickly.',
+        keyDrivers: ['Ava shaped the dominant frame.'],
+        audienceSignals: ['Neutral agents stayed persuadable.'],
+        platformReadout: {
+          twitter: 'Fast amplification.',
+          reddit: 'Slower but deeper debate.',
+        },
+        interventionIdeas: ['Publish a clear follow-up.'],
+        watchSignals: ['Neutral agents shifting negative.'],
+      },
       agents: [
         {
           id: 'agent_1',
@@ -275,6 +311,8 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
   assert.equal(scenario.mockMode, true)
   assert.ok(scenario.results)
   assert.equal(scenario.results?.summary, 'The swarm converged around a single narrative.')
+  assert.equal(scenario.results?.brief?.premise, 'Completed run')
+  assert.equal(scenario.results?.report?.platformReadout.twitter, 'Fast amplification.')
   assert.ok(scenario.results?.posts[0].timestamp instanceof Date)
   assert.ok(scenario.results?.posts[0].comments[0].timestamp instanceof Date)
   assert.ok(scenario.results?.events[0].timestamp instanceof Date)

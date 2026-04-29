@@ -122,6 +122,27 @@ export interface SimulationScenario {
   results?: SimulationScenarioResults
 }
 
+export interface SimulationWorldBrief {
+  premise: string
+  objective: string
+  sourceMode: 'prompt_only' | 'grounded_upload'
+  sourceReference?: string
+  platforms: Array<'twitter' | 'reddit'>
+  focusAreas: string[]
+}
+
+export interface SimulationReport {
+  executiveVerdict: string
+  keyDrivers: string[]
+  audienceSignals: string[]
+  platformReadout: {
+    twitter: string
+    reddit: string
+  }
+  interventionIdeas: string[]
+  watchSignals: string[]
+}
+
 export interface SimulationScenarioResults {
   agents: SimulationAgent[]
   events: SimulationEvent[]
@@ -129,6 +150,8 @@ export interface SimulationScenarioResults {
   rounds: SimulationRound[]
   summary: string
   predictions: string[]
+  brief?: SimulationWorldBrief
+  report?: SimulationReport
 }
 
 export interface SimulationProgressState {

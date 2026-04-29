@@ -3,9 +3,11 @@ import type {
   SimulationComment,
   SimulationEvent,
   SimulationPost,
+  SimulationReport,
   SimulationRound,
   SimulationScenario,
   SimulationScenarioResults,
+  SimulationWorldBrief,
   SimulationProgressState,
 } from '../types/simulation'
 
@@ -60,6 +62,8 @@ export interface RawScenarioMetadata {
   rounds?: RawSimulationRound[]
   summary?: string
   predictions?: string[]
+  brief?: SimulationWorldBrief
+  report?: SimulationReport
 }
 
 export interface SimulationPollResponse {
@@ -175,6 +179,8 @@ function normalizeSimulationResults(
     rounds: value.rounds.map(normalizeRound),
     summary: value.summary,
     predictions: value.predictions,
+    brief: value.brief,
+    report: value.report,
   }
 }
 
