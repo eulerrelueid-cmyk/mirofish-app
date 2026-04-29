@@ -23,6 +23,13 @@ import { ScenarioInput } from '@/components/ScenarioInput'
 import SocialFeed from '@/components/SocialFeed'
 import { SimulationResults } from '@/components/SimulationResults'
 import { StatsPanel } from '@/components/StatsPanel'
+import {
+  loadCachedHistoryItems,
+  loadCachedScenario,
+  mergeHistoryCollections,
+  saveCachedHistoryItems,
+  saveCachedScenario,
+} from '@/lib/browser-history'
 import { buildScenarioFromPollResponse, type SimulationPollResponse } from '@/lib/simulation-contract'
 import { buildHistoryItemFromScenario, upsertHistoryItem } from '@/lib/simulation-history'
 import { SimulationHistoryItem, SimulationScenario, SimulationStats } from '@/types/simulation'
@@ -99,13 +106,13 @@ export default function Home() {
         throw new Error(data.error || 'Failed to load scenario history')
       }
 
-      setHistoryItems(
-        (data.items || []).map((item) => ({
+      const remoteItems = (data.items || []).map((item) => ({
           ...item,
           createdAt: new Date(item.createdAt),
           updatedAt: new Date(item.updatedAt),
         }))
-      )
+
+      setHistoryItems((previous) => mergeHistoryCollections([...previous, ...remoteItems]))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load scenario history'
       setHistoryError(errorMessage)
@@ -116,6 +123,8 @@ export default function Home() {
 
   const loadScenarioById = useCallback(
     async (scenarioId: string) => {
+      const cachedScenario = loadCachedScenario(scenarioId)
+
       try {
         setError(null)
         setShowScenarioForm(false)
@@ -131,6 +140,16 @@ export default function Home() {
         }
 
         if (!response.ok) {
+          if (cachedScenario) {
+            setCurrentScenario(cachedScenario)
+            setIsSimulating(cachedScenario.status === 'running')
+            setError(cachedScenario.status === 'failed' ? cachedScenario.errorMessage || 'Simulation failed' : null)
+            setHistoryItems((previous) =>
+              mergeHistoryCollections([...previous, buildHistoryItemFromScenario(cachedScenario)])
+            )
+            return
+          }
+
           throw new Error(data.error || 'Failed to load simulation')
         }
 
@@ -148,6 +167,16 @@ export default function Home() {
         setError(loadedScenario.status === 'failed' ? loadedScenario.errorMessage || 'Simulation failed' : null)
         setHistoryItems((previous) => upsertHistoryItem(previous, buildHistoryItemFromScenario(loadedScenario)))
       } catch (err) {
+        if (cachedScenario) {
+          setCurrentScenario(cachedScenario)
+          setIsSimulating(cachedScenario.status === 'running')
+          setError(cachedScenario.status === 'failed' ? cachedScenario.errorMessage || 'Simulation failed' : null)
+          setHistoryItems((previous) =>
+            mergeHistoryCollections([...previous, buildHistoryItemFromScenario(cachedScenario)])
+          )
+          return
+        }
+
         const errorMessage = err instanceof Error ? err.message : 'Failed to load simulation'
         setError(errorMessage)
       }
@@ -253,6 +282,13 @@ export default function Home() {
   )
 
   useEffect(() => {
+    const cachedHistory = loadCachedHistoryItems()
+    if (cachedHistory.length > 0) {
+      setHistoryItems((previous) => mergeHistoryCollections([...previous, ...cachedHistory]))
+    }
+  }, [])
+
+  useEffect(() => {
     void fetchHistory()
   }, [fetchHistory])
 
@@ -262,6 +298,14 @@ export default function Home() {
     }
 
     setHistoryItems((previous) => upsertHistoryItem(previous, buildHistoryItemFromScenario(currentScenario)))
+  }, [currentScenario])
+
+  useEffect(() => {
+    saveCachedHistoryItems(historyItems)
+  }, [historyItems])
+
+  useEffect(() => {
+    saveCachedScenario(currentScenario)
   }, [currentScenario])
 
   useEffect(() => {

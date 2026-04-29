@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getScenarioOwnerHash } from '@/lib/scenario-owner'
+import { ensureScenarioOwner, setScenarioOwnerCookie } from '@/lib/scenario-owner'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { buildHistoryItemsFromApi } from '@/lib/simulation-history'
 
@@ -9,16 +9,12 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const ownerHash = getScenarioOwnerHash(request)
-
-    if (!ownerHash) {
-      return NextResponse.json({ items: [] })
-    }
+    const owner = ensureScenarioOwner(request)
 
     const { data, error } = await supabaseAdmin
       .from('mirofish_scenarios')
       .select('id,title,description,status,created_at,updated_at,results')
-      .eq('owner_token_hash', ownerHash)
+      .eq('owner_token_hash', owner.ownerHash)
       .order('updated_at', { ascending: false })
       .limit(DEFAULT_HISTORY_LIMIT)
 
@@ -30,9 +26,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       items: buildHistoryItemsFromApi(data || []),
     })
+
+    if (owner.shouldSetCookie) {
+      setScenarioOwnerCookie(response, owner.token)
+    }
+
+    return response
   } catch (error) {
     console.error('[SimulationHistory] Unexpected history fetch error', error)
     return NextResponse.json(
