@@ -101,6 +101,7 @@ export interface SimulationScenario {
   id: string
   title: string
   description: string
+  project?: SimulationProject
   seedText?: string
   uploadedFile?: {
     name: string
@@ -129,6 +130,20 @@ export interface SimulationWorldBrief {
   sourceReference?: string
   platforms: Array<'twitter' | 'reddit'>
   focusAreas: string[]
+}
+
+export interface SimulationProject {
+  id: string
+  name: string
+  objective: string
+  status: 'draft' | 'simulation_running' | 'simulation_completed' | 'simulation_failed'
+  sourceMode: 'prompt_only' | 'grounded_upload'
+  sourceReference?: string
+  focusAreas: string[]
+  platforms: Array<'twitter' | 'reddit'>
+  latestScenarioId?: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface SimulationReport {

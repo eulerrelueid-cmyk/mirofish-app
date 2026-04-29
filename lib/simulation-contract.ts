@@ -3,6 +3,7 @@ import type {
   SimulationComment,
   SimulationEvent,
   SimulationPost,
+  SimulationProject,
   SimulationReport,
   SimulationRound,
   SimulationScenario,
@@ -18,6 +19,7 @@ export const SCENARIO_STALE_AFTER_MS = 6 * 60 * 1000
 
 interface RawScenarioRecord {
   id: string
+  project_id?: string | null
   title?: string
   description?: string
   seed_text?: string | null
@@ -26,6 +28,20 @@ interface RawScenarioRecord {
   updated_at?: string
   parameters?: SimulationScenario['parameters']
   results?: RawScenarioMetadata | null
+}
+
+interface RawProjectRecord {
+  id: string
+  name?: string
+  objective?: string
+  status?: SimulationProject['status']
+  source_mode?: SimulationProject['sourceMode']
+  source_reference?: string | null
+  focus_areas?: string[] | null
+  platforms?: Array<'twitter' | 'reddit'> | null
+  latest_scenario_id?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 interface RawSimulationComment extends Omit<SimulationComment, 'timestamp'> {
@@ -68,7 +84,28 @@ export interface RawScenarioMetadata {
 
 export interface SimulationPollResponse {
   scenario: RawScenarioRecord
+  project?: RawProjectRecord | null
   results?: RawScenarioMetadata | null
+}
+
+function normalizeProject(project: RawProjectRecord | null | undefined, previousProject?: SimulationProject): SimulationProject | undefined {
+  if (!project && !previousProject) {
+    return undefined
+  }
+
+  return {
+    id: project?.id ?? previousProject?.id ?? 'unknown-project',
+    name: project?.name ?? previousProject?.name ?? 'Untitled project',
+    objective: project?.objective ?? previousProject?.objective ?? '',
+    status: project?.status ?? previousProject?.status ?? 'draft',
+    sourceMode: project?.source_mode ?? previousProject?.sourceMode ?? 'prompt_only',
+    sourceReference: project?.source_reference ?? previousProject?.sourceReference ?? undefined,
+    focusAreas: project?.focus_areas ?? previousProject?.focusAreas ?? [],
+    platforms: project?.platforms ?? previousProject?.platforms ?? ['twitter', 'reddit'],
+    latestScenarioId: project?.latest_scenario_id ?? previousProject?.latestScenarioId ?? undefined,
+    createdAt: project?.created_at ? new Date(project.created_at) : previousProject?.createdAt ?? new Date(),
+    updatedAt: project?.updated_at ? new Date(project.updated_at) : previousProject?.updatedAt ?? new Date(),
+  }
 }
 
 function toDate(timestamp: RawTimestamp): Date {
@@ -206,6 +243,7 @@ export function buildScenarioFromPollResponse(
     id: payload.scenario.id,
     title: payload.scenario.title ?? previousScenario?.title ?? 'Untitled scenario',
     description: payload.scenario.description ?? previousScenario?.description ?? '',
+    project: normalizeProject(payload.project, previousScenario?.project),
     seedText: payload.scenario.seed_text ?? previousScenario?.seedText ?? undefined,
     uploadedFile: previousScenario?.uploadedFile,
     status: missingFinalResults || staleScenario ? 'failed' : normalizedResults ? 'completed' : lifecycleStatus,

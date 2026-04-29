@@ -46,11 +46,11 @@ export function ScenarioHistory({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="section-label">History</div>
-          <p className="mt-3 text-sm text-slate-500">Click any run to open it in the workspace.</p>
+          <p className="mt-3 text-sm text-slate-500">Open any run in the workspace.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
-            {items.length}
+            {items.length} runs
           </div>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
         </div>
@@ -64,7 +64,7 @@ export function ScenarioHistory({
 
       {!isLoading && items.length === 0 ? (
         <div className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-12 text-center text-sm text-slate-400">
-          No saved runs yet.
+          No runs yet.
         </div>
       ) : (
         <div className="max-h-[72vh] space-y-2 overflow-y-auto pr-1 sm:pr-2">
@@ -72,10 +72,10 @@ export function ScenarioHistory({
             const isActive = item.id === currentScenarioId
             const statusTone =
               item.status === 'completed'
-                ? 'text-miro-accent'
+                ? 'border-miro-accent/20 bg-miro-accent/10 text-miro-accent'
                 : item.status === 'failed'
-                  ? 'text-red-300'
-                  : 'text-miro-glow'
+                  ? 'border-red-400/20 bg-red-500/10 text-red-200'
+                  : 'border-white/10 bg-white/5 text-slate-300'
 
             return (
               <button
@@ -84,16 +84,16 @@ export function ScenarioHistory({
                 onClick={() => onSelect(item.id)}
                 className={`w-full rounded-[22px] border px-4 py-4 text-left transition-all ${
                   isActive
-                    ? 'border-miro-accent/35 bg-miro-accent/10'
+                    ? 'border-white/[0.15] bg-white/[0.08]'
                     : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.05]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-white">{item.title}</p>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">{item.description}</p>
+                    <p className="mt-1 line-clamp-1 text-sm leading-6 text-slate-500">{item.description}</p>
                   </div>
-                  <span className={`rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-medium ${statusTone}`}>
+                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusTone}`}>
                     {formatStatus(item.status)}
                   </span>
                 </div>

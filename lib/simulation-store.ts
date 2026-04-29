@@ -36,6 +36,37 @@ interface ProgressMetadata {
   error?: string
 }
 
+async function updateLinkedProjectForScenario(
+  scenarioId: string,
+  update: Record<string, unknown>
+) {
+  const { data: scenario, error: scenarioError } = await supabaseAdmin
+    .from('mirofish_scenarios')
+    .select('project_id')
+    .eq('id', scenarioId)
+    .single()
+
+  if (scenarioError) {
+    throw new Error(`Failed to load scenario project link: ${scenarioError.message}`)
+  }
+
+  if (!scenario.project_id) {
+    return
+  }
+
+  const { error: projectError } = await supabaseAdmin
+    .from('mirofish_projects')
+    .update({
+      ...update,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', scenario.project_id)
+
+  if (projectError) {
+    throw new Error(`Failed to update linked project: ${projectError.message}`)
+  }
+}
+
 export async function updateScenarioProgress(
   scenarioId: string,
   progress: SimulationProgress,
@@ -89,6 +120,10 @@ export async function markScenarioFailed(
       error: errorMessage,
     }
   )
+
+  await updateLinkedProjectForScenario(scenarioId, {
+    status: 'simulation_failed',
+  })
 }
 
 async function clearScenarioArtifacts(scenarioId: string) {
@@ -252,4 +287,14 @@ export async function persistSimulationResults(
   if (updateError) {
     throw new Error(`Failed to update scenario: ${updateError.message}`)
   }
+
+  await updateLinkedProjectForScenario(scenarioId, {
+    latest_scenario_id: scenarioId,
+    status: 'simulation_completed',
+    focus_areas: simulationResults.brief?.focusAreas ?? null,
+    platforms: simulationResults.brief?.platforms ?? null,
+    source_mode: simulationResults.brief?.sourceMode ?? null,
+    source_reference: simulationResults.brief?.sourceReference ?? null,
+    report_snapshot: simulationResults.report ?? null,
+  })
 }

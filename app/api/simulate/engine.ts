@@ -21,6 +21,7 @@ import {
   AgentAction,
   AgentMemory,
 } from '@/types/simulation'
+import { buildSimulationWorldBrief } from '@/lib/project-artifacts'
 
 const KIMI_BASE_URL = process.env.KIMI_API_BASE_URL || 'https://api.moonshot.ai/v1'
 const KIMI_MODEL = process.env.KIMI_MODEL || 'kimi-k2.5'
@@ -232,7 +233,12 @@ export async function runSimulation(config: SimulationConfig): Promise<{
     postsCount: state.posts.length,
     eventsCount: state.events.length,
   })
-  const brief = buildSimulationBrief(config)
+  const brief = buildSimulationWorldBrief({
+    title: config.scenarioTitle,
+    description: config.scenarioDescription,
+    seedText: config.seedText,
+    sourceReference: config.seedText ? 'Prompt + uploaded grounding' : undefined,
+  })
   let summary: string
   let predictions: string[]
   let report: SimulationReport
@@ -1206,44 +1212,6 @@ async function requestKimiChatCompletion(options: KimiCompletionOptions) {
   }
 
   throw new Error('Kimi API request failed after retries')
-}
-
-function buildSimulationBrief(config: SimulationConfig): SimulationWorldBrief {
-  const combinedText = `${config.scenarioTitle} ${config.scenarioDescription} ${config.seedText || ''}`
-
-  return {
-    premise: config.scenarioTitle,
-    objective: config.scenarioDescription,
-    sourceMode: config.seedText ? 'grounded_upload' : 'prompt_only',
-    sourceReference: config.seedText ? 'Prompt + uploaded grounding' : undefined,
-    platforms: ['twitter', 'reddit'],
-    focusAreas: extractFocusAreas(combinedText),
-  }
-}
-
-function extractFocusAreas(value: string) {
-  const stopWords = new Set([
-    'about', 'across', 'after', 'against', 'among', 'around', 'because', 'before', 'between', 'could',
-    'describe', 'during', 'focus', 'from', 'have', 'into', 'likely', 'public', 'should', 'their', 'there',
-    'these', 'they', 'this', 'those', 'under', 'what', 'when', 'where', 'which', 'with', 'would', 'your',
-    'over', 'will', 'want',
-  ])
-
-  const counts = new Map<string, number>()
-  for (const token of value.toLowerCase().match(/[a-z][a-z-]{3,}/g) || []) {
-    if (stopWords.has(token)) {
-      continue
-    }
-
-    counts.set(token, (counts.get(token) || 0) + 1)
-  }
-
-  const focusAreas = Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([token]) => token)
-
-  return focusAreas.length > 0 ? focusAreas : ['sentiment', 'narrative', 'reaction']
 }
 
 function normalizeGeneratedReport(report: Partial<SimulationReport> | undefined): SimulationReport | null {

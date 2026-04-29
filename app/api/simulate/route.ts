@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { start } from 'workflow/api'
 
 import { ensureScenarioOwner, setScenarioOwnerCookie } from '@/lib/scenario-owner'
+import { buildSimulationWorldBrief } from '@/lib/project-artifacts'
 import { getStaleScenarioMessage, isScenarioStale, type RawScenarioMetadata } from '@/lib/simulation-contract'
 import { markScenarioFailed, updateScenarioProgress } from '@/lib/simulation-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -116,10 +117,41 @@ export async function POST(request: NextRequest) {
     }
 
     const owner = ensureScenarioOwner(request)
+    const worldBrief = buildSimulationWorldBrief({
+      title,
+      description,
+      seedText: combinedSeedText,
+      sourceReference: uploadedFile?.metadata.name,
+    })
+
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from('mirofish_projects')
+      .insert({
+        name: title,
+        objective: description,
+        status: 'simulation_running',
+        owner_token_hash: owner.ownerHash,
+        source_mode: worldBrief.sourceMode,
+        source_reference: worldBrief.sourceReference ?? null,
+        focus_areas: worldBrief.focusAreas,
+        platforms: worldBrief.platforms,
+        user_id: userId,
+      })
+      .select('id')
+      .single()
+
+    if (projectError) {
+      console.error('Error creating project:', projectError)
+      return NextResponse.json(
+        { error: 'Failed to create project' },
+        { status: 500 }
+      )
+    }
 
     const { data: scenario, error: scenarioError } = await supabaseAdmin
       .from('mirofish_scenarios')
       .insert({
+        project_id: project.id,
         title,
         description,
         seed_text: seedText,
@@ -170,6 +202,7 @@ export async function POST(request: NextRequest) {
       )
 
       const response = NextResponse.json({
+        projectId: project.id,
         scenarioId: scenario.id,
         workflowRunId: workflowRun.runId,
         status: 'running',
@@ -226,7 +259,7 @@ export async function GET(request: NextRequest) {
   try {
     const { data: scenario, error: scenarioError } = await supabaseAdmin
       .from('mirofish_scenarios')
-      .select('id,title,description,seed_text,uploaded_file,status,created_at,updated_at,parameters,results')
+      .select('id,project_id,title,description,seed_text,uploaded_file,status,created_at,updated_at,parameters,results')
       .eq('id', scenarioId)
       .single()
 
@@ -272,9 +305,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    let project = null
+    if (scenario.project_id) {
+      const { data: projectData, error: projectError } = await supabaseAdmin
+        .from('mirofish_projects')
+        .select('id,name,objective,status,source_mode,source_reference,focus_areas,platforms,latest_scenario_id,created_at,updated_at')
+        .eq('id', scenario.project_id)
+        .single()
+
+      if (projectError) {
+        console.error('Error fetching project:', projectError)
+      } else {
+        project = projectData
+      }
+    }
+
     if (scenario.status !== 'completed') {
       return NextResponse.json({
         scenario,
+        project,
         agents: [],
         posts: [],
         events: [],
@@ -327,6 +376,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       scenario,
+      project,
       agents: agents || [],
       posts: postsWithComments,
       events: events || [],

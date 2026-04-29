@@ -14,6 +14,7 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
   }
 
   const { brief, report } = scenario.results
+  const project = scenario.project
 
   if (!brief && !report) {
     return (
@@ -28,6 +29,47 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
 
   return (
     <div className="space-y-4">
+      {project && (
+        <section className="glass-panel rounded-[28px] p-5 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-miro-accent">
+              <Layers3 className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="section-label">Project</div>
+              <p className="mt-3 text-sm text-slate-500">The root object linked to this simulation.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_320px]">
+            <div className="space-y-4">
+              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Project name</p>
+                <p className="mt-2 text-lg font-semibold text-white">{project.name}</p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Objective</p>
+                <p className="mt-2 text-sm leading-7 text-slate-300">{project.objective}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="soft-panel rounded-[22px] p-4">
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Status</p>
+                <p className="mt-2 text-sm font-semibold capitalize text-white">{project.status.replace(/_/g, ' ')}</p>
+              </div>
+              <div className="soft-panel rounded-[22px] p-4">
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Source mode</p>
+                <p className="mt-2 text-sm font-semibold text-white">
+                  {project.sourceMode === 'grounded_upload' ? 'Grounded upload' : 'Prompt only'}
+                </p>
+                {project.sourceReference && <p className="mt-2 text-sm text-slate-400">{project.sourceReference}</p>}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {brief && (
         <section className="glass-panel rounded-[28px] p-5 sm:p-6">
           <div className="mb-4 flex items-center gap-3">

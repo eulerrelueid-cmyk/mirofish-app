@@ -3,22 +3,22 @@
 import { BookOpen, Compass, History, Sparkles } from 'lucide-react'
 
 const quickStart = [
-  'Open Workspace, add a title, write the prompt, and run the scenario.',
-  'Use optional grounding only when you want the simulation tied to specific notes or documents.',
-  'Open History to reload a prior run. Open Overview first when you want the shortest path to results.',
+  { label: 'Set', text: 'Add a title and prompt in Workspace.' },
+  { label: 'Ground', text: 'Attach notes or one file only when needed.' },
+  { label: 'Review', text: 'Use History to reopen prior runs.' },
 ]
 
 const scenarioTips = [
   'Lead with the trigger: launch, rumor, leak, price move, or policy change.',
-  'State who is under pressure: customers, media, investors, employees, or a mixed audience.',
-  'Ask for an outcome you can judge: backlash, adoption, trust, narrative control, or likely winner.',
+  'Name the audience under pressure.',
+  'Ask for an outcome you can judge.',
 ]
 
 const readingTips = [
-  'Overview is the shortest read: summary, metrics, and likely outcomes.',
-  'Feed shows the visible conversation and who gets engagement.',
-  'Network shows central actors, bridges, and sentiment splits.',
-  'Timeline shows when the run turned, escalated, or converged.',
+  { label: 'Overview', text: 'Fastest summary of likely outcomes.' },
+  { label: 'Feed', text: 'Visible conversation and engagement.' },
+  { label: 'Network', text: 'Central actors, bridges, and splits.' },
+  { label: 'Timeline', text: 'Where the run turned or converged.' },
 ]
 
 export function DocsPanel() {
@@ -30,18 +30,18 @@ export function DocsPanel() {
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <div className="section-label">How to use it</div>
+            <div className="section-label">Guide</div>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              This tab holds the app guidance so the workspace can stay focused on writing prompts and running simulations.
+              Keep the workspace for writing and runs. Use this tab as a compact reference.
             </p>
           </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          {quickStart.map((item, index) => (
-            <div key={item} className="soft-panel rounded-[22px] p-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Step {index + 1}</p>
-              <p className="mt-3 text-sm leading-7 text-slate-200">{item}</p>
+          {quickStart.map((item) => (
+            <div key={item.label} className="soft-panel rounded-[22px] p-4">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+              <p className="mt-3 text-sm leading-7 text-slate-200">{item.text}</p>
             </div>
           ))}
         </div>
@@ -54,8 +54,8 @@ export function DocsPanel() {
               <Compass className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Writing stronger scenarios</h3>
-              <p className="text-sm text-slate-500">Keep prompts specific and decision-oriented.</p>
+              <h3 className="text-lg font-semibold text-white">Prompting</h3>
+              <p className="text-sm text-slate-500">Keep prompts specific.</p>
             </div>
           </div>
 
@@ -74,15 +74,16 @@ export function DocsPanel() {
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Reading results</h3>
+              <h3 className="text-lg font-semibold text-white">Views</h3>
               <p className="text-sm text-slate-500">Each view answers a different question.</p>
             </div>
           </div>
 
           <div className="space-y-3">
             {readingTips.map((item) => (
-              <div key={item} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm leading-7 text-slate-300">
-                {item}
+              <div key={item.label} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
+                <p className="text-sm font-medium text-white">{item.label}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">{item.text}</p>
               </div>
             ))}
           </div>
@@ -96,12 +97,12 @@ export function DocsPanel() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white">History</h3>
-            <p className="text-sm text-slate-500">Use the history tab as the record of previous runs.</p>
+            <p className="text-sm text-slate-500">Reopen prior runs from here.</p>
           </div>
         </div>
 
         <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-7 text-slate-300">
-          Clicking a saved run opens it in the workspace. Use the search field to narrow the list by title, description, or summary.
+          Select any saved run to load it back into Workspace.
         </div>
       </section>
     </div>

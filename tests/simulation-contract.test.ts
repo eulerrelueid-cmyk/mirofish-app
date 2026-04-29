@@ -217,6 +217,18 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
         ],
       },
     },
+    project: {
+      id: 'project_1',
+      name: 'Completed run',
+      objective: 'Finished background worker',
+      status: 'simulation_completed',
+      source_mode: 'prompt_only',
+      focus_areas: ['narrative', 'reaction'],
+      platforms: ['twitter', 'reddit'],
+      latest_scenario_id: 'scenario_2',
+      created_at: '2026-04-26T11:59:00.000Z',
+      updated_at: '2026-04-26T12:02:00.000Z',
+    },
     results: {
       workflowRunId: 'run_456',
       mockMode: true,
@@ -309,6 +321,8 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
 
   assert.equal(scenario.status, 'completed')
   assert.equal(scenario.mockMode, true)
+  assert.equal(scenario.project?.id, 'project_1')
+  assert.equal(scenario.project?.status, 'simulation_completed')
   assert.ok(scenario.results)
   assert.equal(scenario.results?.summary, 'The swarm converged around a single narrative.')
   assert.equal(scenario.results?.brief?.premise, 'Completed run')

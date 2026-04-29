@@ -10,10 +10,22 @@ interface ScenarioInputProps {
 }
 
 const examplePrompts = [
-  'Will an AI-first product launch trigger trust concerns or fast adoption?',
-  'How does a policy rumor spread across technical, media, and investor groups?',
-  'Which narrative wins when a competitor cuts pricing in public?',
-]
+  {
+    label: 'Product launch',
+    title: 'AI product launch',
+    prompt: 'Will an AI-first product launch trigger trust concerns or fast adoption?',
+  },
+  {
+    label: 'Policy rumor',
+    title: 'Policy rumor spread',
+    prompt: 'How does a policy rumor spread across technical, media, and investor groups?',
+  },
+  {
+    label: 'Price cut',
+    title: 'Competitor price cut',
+    prompt: 'Which narrative wins when a competitor cuts pricing in public?',
+  },
+] as const
 
 export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
   const [title, setTitle] = useState('')
@@ -50,22 +62,25 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="section-label">New run</div>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Write the scenario and run it.</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Set the scenario.</h2>
         </div>
         <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-400">
-          Title, prompt, execute
+          Required
         </div>
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
-        {examplePrompts.map((prompt, index) => (
+        {examplePrompts.map((example) => (
           <button
-            key={prompt}
+            key={example.label}
             type="button"
-            onClick={() => setDescription(prompt)}
+            onClick={() => {
+              setTitle(example.title)
+              setDescription(example.prompt)
+            }}
             className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
           >
-            Example {index + 1}
+            {example.label}
           </button>
         ))}
       </div>
@@ -89,7 +104,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Describe the trigger, the audience, and the outcome you want the simulation to test."
+              placeholder="Describe the trigger, audience, and question to test."
               rows={5}
               className="w-full resize-none rounded-[24px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
               required
@@ -101,7 +116,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4">
             <div className="text-left">
               <p className="text-sm font-semibold text-white">Optional grounding</p>
-              <p className="text-sm text-slate-500">Add notes or one file only when you want the run tied to source material.</p>
+              <p className="text-sm text-slate-500">Add notes or one file.</p>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-400 transition-transform group-open:rotate-180">
               <ChevronDown className="h-4 w-4" />
@@ -114,7 +129,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
               <textarea
                 value={seedText}
                 onChange={(event) => setSeedText(event.target.value)}
-                placeholder="Paste research notes, quotes, or context."
+                placeholder="Notes, quotes, or context."
                 rows={6}
                 className="w-full resize-none rounded-[22px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25"
               />
@@ -130,7 +145,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
                     </div>
                     <div className="overflow-hidden">
                       <p className="truncate text-sm font-medium text-white">{uploadedFile.name}</p>
-                      <p className="text-xs text-slate-400">{(uploadedFile.size / 1024).toFixed(1)} KB attached</p>
+                      <p className="text-xs text-slate-400">{(uploadedFile.size / 1024).toFixed(1)} KB</p>
                     </div>
                   </div>
                   <button
@@ -146,16 +161,16 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
                 <div
                   {...getRootProps()}
                   className={`flex min-h-[164px] cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed p-5 text-center transition-all ${
-                    isDragActive ? 'border-miro-accent bg-miro-accent/10' : 'border-white/15 bg-black/25 hover:border-white/30 hover:bg-black/35'
+                    isDragActive
+                      ? 'border-miro-accent bg-miro-accent/10'
+                      : 'border-white/[0.15] bg-black/25 hover:border-white/30 hover:bg-black/35'
                   }`}
                 >
                   <input {...getInputProps()} />
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
                     <Upload className={`h-5 w-5 ${isDragActive ? 'text-miro-accent' : 'text-slate-400'}`} />
                   </div>
-                  <p className="text-sm font-medium text-white">
-                    {isDragActive ? 'Drop the file here' : 'Drop a file or tap to browse'}
-                  </p>
+                  <p className="text-sm font-medium text-white">{isDragActive ? 'Drop file' : 'Drop or browse'}</p>
                   <p className="mt-1 text-xs text-slate-500">PDF, DOCX, or TXT</p>
                 </div>
               )}
@@ -167,7 +182,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
           <button
             type="submit"
             disabled={isLoading || !title || !description}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#fff1cf] via-miro-glow to-miro-accent px-6 py-3.5 text-sm font-semibold text-slate-950 transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(247,191,117,0.22)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d6c08f] bg-[#e6d6b4] px-6 py-3.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-[#ecdec0] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -176,7 +191,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
               </>
             ) : (
               <>
-                Run simulation
+                Run
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

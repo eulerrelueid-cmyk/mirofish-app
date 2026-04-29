@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, Fish, History, LayoutDashboard, Menu, Sparkles, X } from 'lucide-react'
+import { BookOpen, Fish, History, LayoutDashboard, Menu, X } from 'lucide-react'
 
 type AppView = 'workspace' | 'history' | 'docs'
 
@@ -19,7 +19,7 @@ const navItems: Array<{
 }> = [
   { id: 'workspace', label: 'Workspace', icon: LayoutDashboard },
   { id: 'history', label: 'History', icon: History },
-  { id: 'docs', label: 'How to use it', icon: BookOpen },
+  { id: 'docs', label: 'Guide', icon: BookOpen },
 ]
 
 function formatStatusLabel(status?: string) {
@@ -43,17 +43,17 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07111a]/78 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-gradient-to-br from-[#fff4d5] via-miro-glow to-miro-accent text-slate-950">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-gradient-to-br from-[#fff4d5] via-[#dcc592] to-[#a78b62] text-slate-950 shadow-[0_12px_28px_rgba(0,0,0,0.18)]">
               <Fish className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">MiroFish</h1>
-              <p className="truncate text-sm text-slate-500">{currentScenarioTitle || 'Simulation workspace'}</p>
+              <p className="truncate text-sm text-slate-500">{currentScenarioTitle || 'Workspace'}</p>
             </div>
           </div>
 
           <nav className="hidden items-center gap-2 lg:flex">
-            <div className="rounded-full border border-white/10 bg-white/5 p-1">
+            <div className="rounded-full border border-white/10 bg-white/[0.04] p-1">
               {navItems.map(({ id, label, icon: Icon }) => {
                 const isActive = activeView === id
 
@@ -64,8 +64,8 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
                     onClick={() => onNavigate(id)}
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
                       isActive
-                        ? 'bg-white text-slate-950 shadow-[0_10px_20px_rgba(255,255,255,0.12)]'
-                        : 'text-slate-300 hover:bg-white/8 hover:text-white'
+                        ? 'border border-white/10 bg-white/[0.12] text-white'
+                        : 'border border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -78,11 +78,9 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
 
           <div className="flex items-center gap-3">
             {currentScenarioStatus && (
-              <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 md:flex">
-                <Sparkles className="h-4 w-4 text-miro-accent" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-300">
-                  {formatStatusLabel(currentScenarioStatus)}
-                </span>
+              <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 md:flex">
+                <span className="h-2 w-2 rounded-full bg-miro-accent/80" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-300">{formatStatusLabel(currentScenarioStatus)}</span>
               </div>
             )}
             <button
@@ -111,7 +109,7 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-slate-500">Menu</p>
-                <p className="mt-1 text-lg font-semibold text-white">Navigate</p>
+                <p className="mt-1 text-lg font-semibold text-white">Sections</p>
               </div>
               <button
                 type="button"
@@ -134,14 +132,14 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
                     onClick={() => handleNavigate(id)}
                     className={`w-full rounded-[24px] border px-4 py-4 text-left transition-all ${
                       isActive
-                        ? 'border-miro-accent/35 bg-miro-accent/10'
+                        ? 'border-white/[0.12] bg-white/10'
                         : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.08]'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                          isActive ? 'bg-miro-accent/15 text-miro-accent' : 'bg-black/20 text-slate-400'
+                          isActive ? 'bg-white/10 text-white' : 'bg-black/20 text-slate-400'
                         }`}
                       >
                         <Icon className="h-5 w-5" />
@@ -154,8 +152,8 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
             </div>
 
             <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Current run</p>
-              <p className="mt-2 text-sm font-medium text-white">{currentScenarioTitle || 'No run selected'}</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Open run</p>
+              <p className="mt-2 text-sm font-medium text-white">{currentScenarioTitle || 'No run open'}</p>
               <p className="mt-1 text-sm text-slate-400">{formatStatusLabel(currentScenarioStatus)}</p>
             </div>
           </aside>

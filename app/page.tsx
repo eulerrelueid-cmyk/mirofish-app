@@ -558,7 +558,7 @@ export default function Home() {
               onClick={() => setActiveView('docs')}
               className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
             >
-              <span>How to use it</span>
+              <span>Guide</span>
               <BookOpen className="h-4 w-4" />
             </button>
           </div>
@@ -825,7 +825,7 @@ export default function Home() {
               onClick={() => setActiveView('docs')}
               className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
             >
-              <span>How to use it</span>
+              <span>Guide</span>
               <BookOpen className="h-4 w-4" />
             </button>
             <button
@@ -848,9 +848,9 @@ export default function Home() {
   const renderDocs = () => (
     <div className="space-y-4">
       <section className="glass-panel rounded-[30px] p-5 sm:p-6">
-        <div className="section-label">How to use it</div>
+        <div className="section-label">Guide</div>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-          Workspace stays prompt-first. History stays focused on reopening runs. This tab carries the guidance.
+          Workspace stays prompt-first. History stays focused on reopening runs. This tab holds the guidance.
         </p>
       </section>
       <DocsPanel />

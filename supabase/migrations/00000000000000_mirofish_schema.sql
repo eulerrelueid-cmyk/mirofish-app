@@ -4,9 +4,28 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- MiroFish Projects table
+CREATE TABLE IF NOT EXISTS mirofish_projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  objective TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  owner_token_hash TEXT,
+  source_mode TEXT NOT NULL DEFAULT 'prompt_only',
+  source_reference TEXT,
+  focus_areas JSONB NOT NULL DEFAULT '[]'::jsonb,
+  platforms JSONB NOT NULL DEFAULT '["twitter","reddit"]'::jsonb,
+  latest_scenario_id UUID,
+  report_snapshot JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
 -- MiroFish Scenarios table
 CREATE TABLE IF NOT EXISTS mirofish_scenarios (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES mirofish_projects(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   seed_text TEXT,
@@ -112,8 +131,12 @@ CREATE TABLE IF NOT EXISTS mirofish_user_settings (
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_user_id ON mirofish_scenarios(user_id);
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_owner_token_hash ON mirofish_scenarios(owner_token_hash);
+CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_project_id ON mirofish_scenarios(project_id);
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_status ON mirofish_scenarios(status);
 CREATE INDEX IF NOT EXISTS idx_mirofish_scenarios_created_at ON mirofish_scenarios(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mirofish_projects_user_id ON mirofish_projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_mirofish_projects_owner_token_hash ON mirofish_projects(owner_token_hash);
+CREATE INDEX IF NOT EXISTS idx_mirofish_projects_status ON mirofish_projects(status);
 CREATE INDEX IF NOT EXISTS idx_mirofish_agents_scenario_id ON mirofish_agents(scenario_id);
 CREATE INDEX IF NOT EXISTS idx_mirofish_events_scenario_id ON mirofish_events(scenario_id);
 CREATE INDEX IF NOT EXISTS idx_mirofish_events_timestamp ON mirofish_events(timestamp DESC);
@@ -139,6 +162,13 @@ CREATE TRIGGER mirofish_update_scenarios_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION mirofish_update_updated_at_column();
 
+-- Trigger for mirofish_projects
+DROP TRIGGER IF EXISTS mirofish_update_projects_updated_at ON mirofish_projects;
+CREATE TRIGGER mirofish_update_projects_updated_at
+  BEFORE UPDATE ON mirofish_projects
+  FOR EACH ROW
+  EXECUTE FUNCTION mirofish_update_updated_at_column();
+
 -- Trigger for mirofish_user_settings
 DROP TRIGGER IF EXISTS mirofish_update_user_settings_updated_at ON mirofish_user_settings;
 CREATE TRIGGER mirofish_update_user_settings_updated_at
@@ -148,12 +178,35 @@ CREATE TRIGGER mirofish_update_user_settings_updated_at
 
 -- Enable RLS on all tables
 ALTER TABLE mirofish_scenarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mirofish_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mirofish_user_settings ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for mirofish_projects
+DROP POLICY IF EXISTS "Users can view own mirofish projects" ON mirofish_projects;
+CREATE POLICY "Users can view own mirofish projects" ON mirofish_projects
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own mirofish projects" ON mirofish_projects;
+CREATE POLICY "Users can insert own mirofish projects" ON mirofish_projects
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own mirofish projects" ON mirofish_projects;
+CREATE POLICY "Users can update own mirofish projects" ON mirofish_projects
+  FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own mirofish projects" ON mirofish_projects;
+CREATE POLICY "Users can delete own mirofish projects" ON mirofish_projects
+  FOR DELETE
+  USING (auth.uid() = user_id);
 
 -- RLS Policies for mirofish_scenarios
 DROP POLICY IF EXISTS "Users can view own mirofish scenarios" ON mirofish_scenarios;
