@@ -309,7 +309,7 @@ export async function GET(request: NextRequest) {
     if (scenario.project_id) {
       const { data: projectData, error: projectError } = await supabaseAdmin
         .from('mirofish_projects')
-        .select('id,name,objective,status,source_mode,source_reference,focus_areas,platforms,latest_scenario_id,created_at,updated_at')
+        .select('id,name,objective,status,source_mode,source_reference,focus_areas,platforms,report_snapshot,latest_scenario_id,created_at,updated_at')
         .eq('id', scenario.project_id)
         .single()
 

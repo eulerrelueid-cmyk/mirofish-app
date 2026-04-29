@@ -59,13 +59,10 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
 
   return (
     <section className="glass-panel rounded-[32px] p-5 sm:p-6 lg:p-7">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5">
         <div>
-          <div className="section-label">New run</div>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Set the scenario.</h2>
-        </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-400">
-          Required
+          <div className="section-label">Prompt</div>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">New simulation</h2>
         </div>
       </div>
 
@@ -115,8 +112,8 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
         <details className="group rounded-[24px] border border-white/10 bg-black/20">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4">
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">Optional grounding</p>
-              <p className="text-sm text-slate-500">Add notes or one file.</p>
+              <p className="text-sm font-semibold text-white">Grounding</p>
+              <p className="text-sm text-slate-500">Optional notes or one file.</p>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-400 transition-transform group-open:rotate-180">
               <ChevronDown className="h-4 w-4" />
@@ -182,7 +179,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
           <button
             type="submit"
             disabled={isLoading || !title || !description}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d6c08f] bg-[#e6d6b4] px-6 py-3.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-[#ecdec0] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white px-6 py-3.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (
               <>

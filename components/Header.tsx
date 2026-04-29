@@ -48,7 +48,7 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">MiroFish</h1>
-              <p className="truncate text-sm text-slate-500">{currentScenarioTitle || 'Workspace'}</p>
+              <p className="truncate text-sm text-slate-500">{currentScenarioTitle || 'Simulation workspace'}</p>
             </div>
           </div>
 

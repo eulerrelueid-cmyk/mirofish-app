@@ -39,6 +39,7 @@ interface RawProjectRecord {
   source_reference?: string | null
   focus_areas?: string[] | null
   platforms?: Array<'twitter' | 'reddit'> | null
+  report_snapshot?: SimulationReport | null
   latest_scenario_id?: string | null
   created_at?: string
   updated_at?: string
@@ -102,6 +103,7 @@ function normalizeProject(project: RawProjectRecord | null | undefined, previous
     sourceReference: project?.source_reference ?? previousProject?.sourceReference ?? undefined,
     focusAreas: project?.focus_areas ?? previousProject?.focusAreas ?? [],
     platforms: project?.platforms ?? previousProject?.platforms ?? ['twitter', 'reddit'],
+    reportSnapshot: project?.report_snapshot ?? previousProject?.reportSnapshot ?? undefined,
     latestScenarioId: project?.latest_scenario_id ?? previousProject?.latestScenarioId ?? undefined,
     createdAt: project?.created_at ? new Date(project.created_at) : previousProject?.createdAt ?? new Date(),
     updatedAt: project?.updated_at ? new Date(project.updated_at) : previousProject?.updatedAt ?? new Date(),

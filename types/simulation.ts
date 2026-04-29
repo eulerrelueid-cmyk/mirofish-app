@@ -141,6 +141,7 @@ export interface SimulationProject {
   sourceReference?: string
   focusAreas: string[]
   platforms: Array<'twitter' | 'reddit'>
+  reportSnapshot?: SimulationReport
   latestScenarioId?: string
   createdAt: Date
   updatedAt: Date

@@ -225,6 +225,17 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
       source_mode: 'prompt_only',
       focus_areas: ['narrative', 'reaction'],
       platforms: ['twitter', 'reddit'],
+      report_snapshot: {
+        executiveVerdict: 'Persisted report verdict.',
+        keyDrivers: ['Stored driver.'],
+        audienceSignals: ['Stored signal.'],
+        platformReadout: {
+          twitter: 'Stored twitter readout.',
+          reddit: 'Stored reddit readout.',
+        },
+        interventionIdeas: ['Stored intervention.'],
+        watchSignals: ['Stored watch signal.'],
+      },
       latest_scenario_id: 'scenario_2',
       created_at: '2026-04-26T11:59:00.000Z',
       updated_at: '2026-04-26T12:02:00.000Z',
@@ -323,6 +334,7 @@ test('buildScenarioFromPollResponse normalizes completed payloads into final res
   assert.equal(scenario.mockMode, true)
   assert.equal(scenario.project?.id, 'project_1')
   assert.equal(scenario.project?.status, 'simulation_completed')
+  assert.equal(scenario.project?.reportSnapshot?.executiveVerdict, 'Persisted report verdict.')
   assert.ok(scenario.results)
   assert.equal(scenario.results?.summary, 'The swarm converged around a single narrative.')
   assert.equal(scenario.results?.brief?.premise, 'Completed run')

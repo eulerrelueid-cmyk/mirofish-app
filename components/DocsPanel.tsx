@@ -3,9 +3,9 @@
 import { BookOpen, Compass, History, Sparkles } from 'lucide-react'
 
 const quickStart = [
-  { label: 'Set', text: 'Add a title and prompt in Workspace.' },
+  { label: 'Prompt', text: 'Write the scenario and the question to test.' },
   { label: 'Ground', text: 'Attach notes or one file only when needed.' },
-  { label: 'Review', text: 'Use History to reopen prior runs.' },
+  { label: 'Review', text: 'Open a run in Workspace, then read report, feed, network, and timeline.' },
 ]
 
 const scenarioTips = [
@@ -25,16 +25,8 @@ export function DocsPanel() {
   return (
     <div className="space-y-4">
       <section className="glass-panel rounded-[30px] p-5 sm:p-6">
-        <div className="mb-5 flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#fff1cf] via-miro-glow to-miro-accent text-slate-950">
-            <BookOpen className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="section-label">Guide</div>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              Keep the workspace for writing and runs. Use this tab as a compact reference.
-            </p>
-          </div>
+        <div className="mb-5">
+          <div className="section-label">Guide</div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
@@ -90,21 +82,6 @@ export function DocsPanel() {
         </section>
       </div>
 
-      <section className="glass-panel rounded-[28px] p-5 sm:p-6">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-slate-300">
-            <History className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-white">History</h3>
-            <p className="text-sm text-slate-500">Reopen prior runs from here.</p>
-          </div>
-        </div>
-
-        <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-7 text-slate-300">
-          Select any saved run to load it back into Workspace.
-        </div>
-      </section>
     </div>
   )
 }

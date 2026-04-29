@@ -2,6 +2,7 @@
 
 import { Compass, FileText, Layers3, Radar, Sparkles } from 'lucide-react'
 
+import { buildProjectWorkflow } from '@/lib/project-workflow'
 import type { SimulationScenario } from '@/types/simulation'
 
 interface SimulationReportPanelProps {
@@ -9,14 +10,17 @@ interface SimulationReportPanelProps {
 }
 
 export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) {
-  if (!scenario.results) {
+  if (!scenario.results && !scenario.project?.reportSnapshot) {
     return null
   }
 
-  const { brief, report } = scenario.results
+  const { brief } = scenario.results || {}
   const project = scenario.project
+  const report = scenario.results?.report ?? project?.reportSnapshot
+  const workflow = buildProjectWorkflow(project, scenario)
+  const reportSource = scenario.results?.report ? 'Run report' : 'Stored project snapshot'
 
-  if (!brief && !report) {
+  if (!brief && !report && !project) {
     return (
       <section className="glass-panel rounded-[28px] p-5 sm:p-6">
         <div className="section-label">Report</div>
@@ -29,6 +33,30 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
 
   return (
     <div className="space-y-4">
+      <section className="glass-panel rounded-[28px] p-5 sm:p-6">
+        <div className="mb-4">
+          <div className="section-label">Workflow</div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          {workflow.map((step) => {
+            const tone =
+              step.status === 'complete'
+                ? 'border-miro-accent/20 bg-miro-accent/10 text-miro-accent'
+                : step.status === 'current'
+                  ? 'border-miro-glow/20 bg-miro-glow/10 text-miro-glow'
+                  : 'border-white/10 bg-black/20 text-slate-400'
+
+            return (
+              <div key={step.id} className={`rounded-[22px] border px-4 py-4 ${tone}`}>
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em]">{step.id}</p>
+                <p className="mt-2 text-base font-semibold">{step.label}</p>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
       {project && (
         <section className="glass-panel rounded-[28px] p-5 sm:p-6">
           <div className="mb-4 flex items-center gap-3">
@@ -37,7 +65,6 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
             </div>
             <div>
               <div className="section-label">Project</div>
-              <p className="mt-3 text-sm text-slate-500">The root object linked to this simulation.</p>
             </div>
           </div>
 
@@ -65,6 +92,18 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
                 </p>
                 {project.sourceReference && <p className="mt-2 text-sm text-slate-400">{project.sourceReference}</p>}
               </div>
+              {project.focusAreas.length > 0 && (
+                <div className="soft-panel rounded-[22px] p-4">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Focus</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {project.focusAreas.map((area) => (
+                      <span key={area} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -78,7 +117,6 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
             </div>
             <div>
               <div className="section-label">World brief</div>
-              <p className="mt-3 text-sm text-slate-500">The reusable framing for this run.</p>
             </div>
           </div>
 
@@ -133,7 +171,7 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
             </div>
             <div>
               <div className="section-label">Report</div>
-              <p className="mt-3 text-sm text-slate-500">A structured artifact generated from the completed run.</p>
+              <p className="mt-3 text-sm text-slate-500">{reportSource}</p>
             </div>
           </div>
 

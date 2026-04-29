@@ -46,7 +46,6 @@ export function ScenarioHistory({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="section-label">History</div>
-          <p className="mt-3 text-sm text-slate-500">Open any run in the workspace.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">

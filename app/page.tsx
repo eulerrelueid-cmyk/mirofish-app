@@ -32,6 +32,7 @@ import {
 } from '@/lib/browser-history'
 import { buildScenarioFromPollResponse, type SimulationPollResponse } from '@/lib/simulation-contract'
 import { buildHistoryItemFromScenario, upsertHistoryItem } from '@/lib/simulation-history'
+import { buildProjectWorkflow } from '@/lib/project-workflow'
 import { SimulationHistoryItem, SimulationScenario, SimulationStats } from '@/types/simulation'
 
 const AGENT_COUNT = 15
@@ -468,6 +469,7 @@ export default function Home() {
         return haystack.includes(historyFilter)
       })
     : historyItems
+  const workflow = buildProjectWorkflow(currentScenario?.project, currentScenario)
 
   const renderWorkspace = () => (
     <div className="space-y-4">
@@ -478,7 +480,7 @@ export default function Home() {
         </section>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className={`grid gap-4 ${showScenarioForm || !currentScenario ? '' : 'xl:grid-cols-[minmax(0,1fr)_300px]'}`}>
         {(showScenarioForm || !currentScenario) ? (
           <ScenarioInput onSubmit={handleScenarioSubmit} isLoading={isSimulating} />
         ) : (
@@ -525,44 +527,70 @@ export default function Home() {
           </section>
         )}
 
-        <aside className="soft-panel rounded-[30px] p-5">
-          <div className="mb-4">
-            <div className="section-label">Workspace</div>
-            <p className="mt-3 text-sm leading-7 text-slate-400">
-              Keep this tab for writing prompts, launching runs, and reviewing the selected simulation.
-            </p>
-          </div>
+        {currentScenario && !showScenarioForm && (
+          <aside className="soft-panel rounded-[30px] p-5">
+            <div className="mb-4">
+              <div className="section-label">Flow</div>
+            </div>
 
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => {
-                setShowScenarioForm(true)
-                setActiveWorkspaceView('overview')
-              }}
-              className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-            >
-              <span>{currentScenario ? 'New run' : 'Open prompt form'}</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView('history')}
-              className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-            >
-              <span>Open history</span>
-              <History className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView('docs')}
-              className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-            >
-              <span>Guide</span>
-              <BookOpen className="h-4 w-4" />
-            </button>
-          </div>
-        </aside>
+            <div className="space-y-2">
+              {workflow.map((step) => {
+                const tone =
+                  step.status === 'complete'
+                    ? 'border-miro-accent/20 bg-miro-accent/10 text-miro-accent'
+                    : step.status === 'current'
+                      ? 'border-miro-glow/20 bg-miro-glow/10 text-miro-glow'
+                      : 'border-white/10 bg-black/20 text-slate-400'
+
+                return (
+                  <div key={step.id} className={`rounded-[22px] border px-4 py-3 ${tone}`}>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.16em]">{step.id}</p>
+                    <p className="mt-1 text-sm font-semibold">{step.label}</p>
+                  </div>
+                )
+              })}
+            </div>
+
+            {currentScenario.project && (
+              <div className="mt-4 rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Project</p>
+                <p className="mt-2 text-sm font-semibold text-white">{currentScenario.project.name}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
+                    {currentScenario.project.sourceMode === 'grounded_upload' ? 'Grounded' : 'Prompt only'}
+                  </span>
+                  {currentScenario.project.focusAreas.slice(0, 2).map((area) => (
+                    <span key={area} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
+                      {area}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowScenarioForm(true)
+                  setActiveWorkspaceView('overview')
+                }}
+                className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+              >
+                <span>New run</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('history')}
+                className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+              >
+                <span>History</span>
+                <History className="h-4 w-4" />
+              </button>
+            </div>
+          </aside>
+        )}
       </div>
 
       {isSimulating && (
@@ -802,60 +830,17 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <ScenarioHistory
-          items={filteredHistoryItems}
-          currentScenarioId={currentScenario?.id}
-          isLoading={isHistoryLoading}
-          error={historyError}
-          onSelect={openHistoricRun}
-        />
-
-        <aside className="soft-panel rounded-[30px] p-5">
-          <div className="mb-4">
-            <div className="section-label">History</div>
-            <p className="mt-3 text-sm leading-7 text-slate-400">
-              This tab is only for reopening prior runs. Guidance and workflow notes live under How to use it.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setActiveView('docs')}
-              className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-            >
-              <span>Guide</span>
-              <BookOpen className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveView('workspace')
-                setShowScenarioForm(true)
-              }}
-              className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-            >
-              <span>Start a new run</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </aside>
-      </div>
+      <ScenarioHistory
+        items={filteredHistoryItems}
+        currentScenarioId={currentScenario?.id}
+        isLoading={isHistoryLoading}
+        error={historyError}
+        onSelect={openHistoricRun}
+      />
     </div>
   )
 
-  const renderDocs = () => (
-    <div className="space-y-4">
-      <section className="glass-panel rounded-[30px] p-5 sm:p-6">
-        <div className="section-label">Guide</div>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-          Workspace stays prompt-first. History stays focused on reopening runs. This tab holds the guidance.
-        </p>
-      </section>
-      <DocsPanel />
-    </div>
-  )
+  const renderDocs = () => <DocsPanel />
 
   return (
     <main className="min-h-screen bg-miro-dark text-white">

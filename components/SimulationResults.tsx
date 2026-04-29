@@ -25,9 +25,9 @@ export function SimulationResults({ scenario }: SimulationResultsProps) {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_360px]">
         <div className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="section-label">Decision brief</div>
+            <div className="section-label">Summary</div>
             <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
-              Summary generated from the completed run
+              Completed run
             </div>
           </div>
 
@@ -37,7 +37,7 @@ export function SimulationResults({ scenario }: SimulationResultsProps) {
                 <Sparkles className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-2xl font-semibold tracking-tight text-white">Outcome summary</h3>
+                <h3 className="text-2xl font-semibold tracking-tight text-white">Run summary</h3>
                 <p className="mt-1 truncate text-sm text-slate-400">{scenario.title}</p>
               </div>
             </div>
@@ -50,8 +50,8 @@ export function SimulationResults({ scenario }: SimulationResultsProps) {
           <div className="soft-panel rounded-[28px] p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500">Run footprint</p>
-                <p className="mt-1 text-lg font-semibold text-white">Simulation shape</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500">Run</p>
+                <p className="mt-1 text-lg font-semibold text-white">Counts</p>
               </div>
               <ArrowUpRight className="h-4 w-4 text-miro-accent" />
             </div>
@@ -69,7 +69,7 @@ export function SimulationResults({ scenario }: SimulationResultsProps) {
           <div className="soft-panel rounded-[28px] p-5">
             <div className="mb-4">
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500">Predictions</p>
-              <p className="mt-1 text-lg font-semibold text-white">What the swarm expects next</p>
+              <p className="mt-1 text-lg font-semibold text-white">Likely next moves</p>
             </div>
 
             <div className="space-y-3">
