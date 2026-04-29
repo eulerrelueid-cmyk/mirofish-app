@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { start } from 'workflow/api'
 
+import { normalizeScenarioField, parseMultipartScenarioFormData } from '@/lib/scenario-request'
 import { ensureScenarioOwner, setScenarioOwnerCookie } from '@/lib/scenario-owner'
 import { buildSimulationWorldBrief } from '@/lib/project-artifacts'
 import { getStaleScenarioMessage, isScenarioStale, type RawScenarioMetadata } from '@/lib/simulation-contract'
@@ -31,37 +32,15 @@ interface ParsedScenarioRequest {
   combinedSeedText?: string
 }
 
-function normalizeField(value: FormDataEntryValue | string | null | undefined) {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-
-  const trimmed = value.trim()
-  return trimmed || undefined
-}
-
 async function parseScenarioRequest(request: NextRequest): Promise<ParsedScenarioRequest> {
   const contentType = request.headers.get('content-type') || ''
 
   if (contentType.includes('multipart/form-data')) {
-    const { mergeScenarioGrounding, parseUploadedScenarioFile } = await import('@/lib/document-parser')
     const formData = await request.formData()
-    const title = normalizeField(formData.get('title'))
-    const description = normalizeField(formData.get('description'))
-    const seedText = normalizeField(formData.get('seedText'))
-    const userId = normalizeField(formData.get('userId')) ?? null
-    const fileValue = formData.get('file')
-    const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null
-    const uploadedFile = file ? await parseUploadedScenarioFile(file) : null
-
-    return {
-      title: title ?? '',
-      description: description ?? '',
-      seedText,
-      userId,
-      uploadedFile,
-      combinedSeedText: mergeScenarioGrounding(seedText, uploadedFile ?? undefined),
-    }
+    return parseMultipartScenarioFormData(formData, async (file) => {
+      const { parseUploadedScenarioFile } = await import('@/lib/document-parser')
+      return parseUploadedScenarioFile(file)
+    })
   }
 
   const body = (await request.json()) as {
@@ -71,13 +50,13 @@ async function parseScenarioRequest(request: NextRequest): Promise<ParsedScenari
     userId?: string | null
   }
 
-  const seedText = normalizeField(body.seedText)
+  const seedText = normalizeScenarioField(body.seedText)
 
   return {
-    title: normalizeField(body.title) ?? '',
-    description: normalizeField(body.description) ?? '',
+    title: normalizeScenarioField(body.title) ?? '',
+    description: normalizeScenarioField(body.description) ?? '',
     seedText,
-    userId: normalizeField(body.userId ?? undefined) ?? null,
+    userId: normalizeScenarioField(body.userId ?? undefined) ?? null,
     uploadedFile: null,
     combinedSeedText: seedText,
   }

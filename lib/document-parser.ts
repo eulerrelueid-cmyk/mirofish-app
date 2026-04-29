@@ -1,5 +1,4 @@
-import { PDFParse } from 'pdf-parse'
-import mammoth from 'mammoth'
+import { mergeScenarioGrounding } from './scenario-request.ts'
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 const MAX_EXTRACTED_CHARACTERS = 18_000
@@ -39,6 +38,7 @@ function isSupportedFileType(type: string, name: string) {
 }
 
 async function extractPdfText(buffer: Buffer) {
+  const { PDFParse } = await import('pdf-parse')
   const parser = new PDFParse({ data: new Uint8Array(buffer) })
 
   try {
@@ -50,7 +50,8 @@ async function extractPdfText(buffer: Buffer) {
 }
 
 async function extractDocxText(buffer: Buffer) {
-  const result = await mammoth.extractRawText({ buffer })
+  const mammoth = await import('mammoth')
+  const result = await mammoth.default.extractRawText({ buffer })
   return result.value
 }
 
@@ -116,13 +117,4 @@ export async function parseUploadedScenarioFile(file: File): Promise<ParsedScena
   }
 }
 
-export function mergeScenarioGrounding(seedText?: string, upload?: ParsedScenarioUpload) {
-  const sections = [seedText?.trim()]
-
-  if (upload) {
-    sections.push(`Document grounding (${upload.metadata.name}):\n${upload.extractedText}`)
-  }
-
-  const merged = sections.filter((value): value is string => Boolean(value)).join('\n\n')
-  return merged || undefined
-}
+export { mergeScenarioGrounding }
