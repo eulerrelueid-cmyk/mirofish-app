@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { ArrowRight, ChevronDown, FileText, Upload, X } from 'lucide-react'
+import { ArrowRight, ChevronDown, FileText, Sparkles, Upload, Wand2, X } from 'lucide-react'
 
 interface ScenarioInputProps {
   onSubmit: (title: string, description: string, seedText?: string, file?: File) => void
@@ -46,29 +46,66 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
   }
 
   return (
-    <div className="glass-panel rounded-[28px] p-5 sm:p-6 glow-border">
-      <div className="mb-5">
-        <div className="section-label mb-3">New run</div>
-        <h2 className="text-2xl font-semibold tracking-tight text-white">Start a simulation</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300">
-          Describe the scenario you want tested. Add grounding only if the run needs more context.
-        </p>
+    <div className="glass-panel hero-shell ambient-ring rounded-[34px] p-5 sm:p-6 lg:p-7">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_320px]">
+        <div>
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className="eyebrow-pill">Compose a run</div>
+            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
+              Grounded upload support is live
+            </div>
+          </div>
+
+          <div className="mb-5 max-w-3xl">
+            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              Write a scenario worth simulating.
+            </h2>
+            <p className="mt-3 text-sm leading-8 text-slate-300 sm:text-base">
+              Set the trigger, the audience pressure, and the outcome you want the swarm to test. Add source material when you want the run anchored in real documents instead of freeform reasoning.
+            </p>
+          </div>
+
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
+            {examplePrompts.map((prompt, index) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => setDescription(prompt)}
+                className="soft-panel rounded-[22px] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06]"
+              >
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Prompt {index + 1}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-200">{prompt}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <aside className="soft-panel rounded-[28px] p-5">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#fff1cf] via-miro-glow to-miro-accent text-slate-950">
+              <Wand2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-white">Better prompts</p>
+              <p className="text-sm text-slate-400">Three fields matter most.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-sm leading-7 text-slate-300">
+            <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
+              State the exact trigger: launch, leak, rumor, pricing move, or policy change.
+            </div>
+            <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
+              Name the audience under pressure: buyers, press, investors, or internal teams.
+            </div>
+            <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
+              Ask for a decision-shaped outcome, not a vague opinion.
+            </div>
+          </div>
+        </aside>
       </div>
 
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {examplePrompts.map((prompt) => (
-          <button
-            key={prompt}
-            type="button"
-            onClick={() => setDescription(prompt)}
-            className="min-w-[220px] rounded-full border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
           <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-slate-400">Scenario title</label>
           <input
@@ -76,7 +113,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="AI pricing shock across enterprise buyers"
-            className="w-full rounded-[20px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
+            className="w-full rounded-[22px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
             required
           />
         </div>
@@ -88,16 +125,16 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Describe the trigger, the audience, and the outcome you want the agents to react to."
             rows={5}
-            className="w-full resize-none rounded-[22px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
+            className="w-full resize-none rounded-[24px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
             required
           />
         </div>
 
-        <details className="group rounded-[22px] border border-white/10 bg-black/20">
+        <details className="group rounded-[26px] border border-white/10 bg-black/20">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4">
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">Optional context</p>
-              <p className="text-sm text-slate-400">Paste notes or upload one document if you want the run anchored.</p>
+              <p className="text-sm font-semibold text-white">Optional grounding</p>
+              <p className="text-sm text-slate-400">Paste notes or attach one file to anchor the run in concrete material.</p>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-400 transition-transform group-open:rotate-180">
               <ChevronDown className="h-4 w-4" />
@@ -112,14 +149,14 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
                 onChange={(event) => setSeedText(event.target.value)}
                 placeholder="Paste research notes, quotes, or signals."
                 rows={6}
-                className="w-full resize-none rounded-[20px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25"
+                className="w-full resize-none rounded-[22px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25"
               />
             </div>
 
             <div>
               <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-slate-400">Upload document</label>
               {uploadedFile ? (
-                <div className="flex min-h-[164px] items-center justify-between rounded-[22px] border border-miro-accent/30 bg-miro-accent/10 p-4">
+                <div className="flex min-h-[164px] items-center justify-between rounded-[24px] border border-miro-accent/30 bg-miro-accent/10 p-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-black/25">
                       <FileText className="h-5 w-5 text-miro-accent" />
@@ -141,7 +178,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
               ) : (
                 <div
                   {...getRootProps()}
-                  className={`flex min-h-[164px] cursor-pointer flex-col items-center justify-center rounded-[22px] border-2 border-dashed p-5 text-center transition-all ${
+                  className={`flex min-h-[164px] cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed p-5 text-center transition-all ${
                     isDragActive ? 'border-miro-accent bg-miro-accent/10' : 'border-white/15 bg-black/25 hover:border-white/30 hover:bg-black/35'
                   }`}
                 >
@@ -159,14 +196,19 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
           </div>
         </details>
 
-        <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-2xl text-sm leading-7 text-slate-400">
-            Keep the first pass simple. If the output feels too generic, add context and run it again.
-          </p>
+        <div className="flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-miro-accent">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <p className="max-w-2xl text-sm leading-7 text-slate-400">
+              Start with a decisive prompt. If the swarm feels too generic, add grounding and rerun instead of making the scenario longer.
+            </p>
+          </div>
           <button
             type="submit"
             disabled={isLoading || !title || !description}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-miro-accent via-miro-teal to-miro-glow px-5 py-3 text-sm font-semibold text-slate-950 transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(114,224,197,0.22)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#fff1cf] via-miro-glow to-miro-accent px-6 py-3.5 text-sm font-semibold text-slate-950 transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(247,191,117,0.22)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (
               <>

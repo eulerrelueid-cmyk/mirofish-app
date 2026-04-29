@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpen,
   Clock3,
+  FileText,
   History,
   MessageSquare,
   Plus,
@@ -44,11 +45,12 @@ const workspaceTabs: Array<{
   id: WorkspaceView
   label: string
   icon: typeof Sparkles
+  description: string
 }> = [
-  { id: 'overview', label: 'Overview', icon: Sparkles },
-  { id: 'feed', label: 'Feed', icon: MessageSquare },
-  { id: 'network', label: 'Network', icon: Users },
-  { id: 'events', label: 'Timeline', icon: Activity },
+  { id: 'overview', label: 'Overview', icon: Sparkles, description: 'Executive brief and key metrics' },
+  { id: 'feed', label: 'Feed', icon: MessageSquare, description: 'Posts, replies, and engagement' },
+  { id: 'network', label: 'Network', icon: Users, description: 'Influence clusters and ties' },
+  { id: 'events', label: 'Timeline', icon: Activity, description: 'Turning points over time' },
 ]
 
 function formatStatusLabel(status?: SimulationScenario['status']) {
@@ -70,6 +72,10 @@ function formatUpdatedAt(date?: Date) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date)
+}
+
+function formatEventType(type: string) {
+  return type.replace(/_/g, ' ')
 }
 
 export default function Home() {
@@ -107,10 +113,10 @@ export default function Home() {
       }
 
       const remoteItems = (data.items || []).map((item) => ({
-          ...item,
-          createdAt: new Date(item.createdAt),
-          updatedAt: new Date(item.updatedAt),
-        }))
+        ...item,
+        createdAt: new Date(item.createdAt),
+        updatedAt: new Date(item.updatedAt),
+      }))
 
       setHistoryItems((previous) => mergeHistoryCollections([...previous, ...remoteItems]))
     } catch (err) {
@@ -459,119 +465,229 @@ export default function Home() {
     ? historyItems.find((item) => item.id === currentScenario.id) ?? buildHistoryItemFromScenario(currentScenario)
     : null
 
-  const renderPageIntro = (title: string, description: string) => (
-    <section className="mb-5">
-      <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h2>
-      <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-300 sm:text-base">{description}</p>
-    </section>
-  )
+  const workspaceHeroStats = [
+    {
+      label: 'Saved runs',
+      value: historyCount,
+      description: 'Every simulation stays accessible in the library.',
+      icon: History,
+    },
+    {
+      label: 'Agents per run',
+      value: AGENT_COUNT,
+      description: 'Default swarm size for every scenario.',
+      icon: Users,
+    },
+    {
+      label: 'Simulation rounds',
+      value: SIMULATION_ROUNDS,
+      description: 'How long the interaction model plays out.',
+      icon: Clock3,
+    },
+  ]
 
-  const renderWorkspace = () => (
+  const currentRunMeta = currentScenario
+    ? [
+        `${currentScenario.parameters.simulationRounds} rounds`,
+        `${currentScenario.parameters.agentCount} agents`,
+        `Updated ${formatUpdatedAt(currentScenario.updatedAt)}`,
+      ]
+    : []
+
+  const renderWorkspaceOverview = () => (
     <div className="space-y-5">
-      {renderPageIntro(
-        'Run a scenario, then inspect the result.',
-        'The workspace is now focused on the current simulation. Historic runs and usage help live behind the hamburger menu.'
-      )}
+      <section className="glass-panel hero-shell ambient-ring rounded-[36px] p-5 sm:p-6 lg:p-7">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+          <div className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="eyebrow-pill">Scenario intelligence studio</div>
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
+                Single-user command center
+              </div>
+            </div>
+
+            <h2 className="max-w-4xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Run a narrative simulation that feels like a modern control room, not a dev demo.
+            </h2>
+            <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-300 sm:text-base">
+              Write a scenario, ground it with research if needed, and read the swarm through summaries, feed dynamics, network structure, and event timing. Historic runs remain available across the whole app because this instance is for you alone.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setShowScenarioForm(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#fff1cf] via-miro-glow to-miro-accent px-5 py-3 text-sm font-semibold text-slate-950 transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(247,191,117,0.22)]"
+              >
+                {currentScenario ? 'Start another run' : 'Compose a scenario'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('history')}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+              >
+                Browse historic runs
+                <History className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <aside className="soft-panel rounded-[30px] p-5 sm:p-6">
+            <div className="mb-4">
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500">Workspace at a glance</p>
+              <p className="mt-1 text-xl font-semibold text-white">What this studio optimizes for</p>
+            </div>
+
+            <div className="space-y-3">
+              {workspaceHeroStats.map((item) => (
+                <div key={item.label} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
+                      <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">{item.description}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-miro-accent">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      </section>
 
       {error && (
-        <div className="rounded-[24px] border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-200">
+        <section className="rounded-[26px] border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-200">
           <p className="font-semibold">Simulation error</p>
           <p className="mt-1 text-red-100/80">
             {error.toLowerCase().includes('kimi')
               ? 'Please check your Kimi API configuration and try again.'
               : error.toLowerCase().includes('database') || error.toLowerCase().includes('save')
-              ? 'A persistence error occurred. Results may not be saved.'
-              : 'Something unexpected happened during the run. Please try again.'}
+                ? 'A persistence error occurred. Results may not be saved.'
+                : 'Something unexpected happened during the run. Please try again.'}
           </p>
-        </div>
+        </section>
       )}
 
-      {!currentScenario && showScenarioForm && (
-        <ScenarioInput onSubmit={handleScenarioSubmit} isLoading={isSimulating} />
-      )}
+      {!currentScenario && showScenarioForm && <ScenarioInput onSubmit={handleScenarioSubmit} isLoading={isSimulating} />}
 
       {currentScenario && (
-        <div className="glass-panel rounded-[28px] p-5 sm:p-6 glow-border">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <section className="glass-panel rounded-[34px] p-5 sm:p-6 lg:p-7">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_360px]">
             <div className="min-w-0">
-              <div className="section-label mb-3">Current run</div>
-              <h3 className="text-2xl font-semibold tracking-tight text-white">{currentScenario.title}</h3>
-              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">{currentScenario.description}</p>
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="section-label">Active scenario</div>
+                <span
+                  className={`rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] ${
+                    currentScenario.status === 'completed'
+                      ? 'border border-miro-accent/30 bg-miro-accent/10 text-miro-accent'
+                      : currentScenario.status === 'failed'
+                        ? 'border border-red-400/20 bg-red-500/10 text-red-200'
+                        : 'border border-miro-glow/30 bg-miro-glow/10 text-miro-glow'
+                  }`}
+                >
+                  {currentScenario.status === 'running'
+                    ? currentScenario.progress?.stage ?? 'running'
+                    : formatStatusLabel(currentScenario.status)}
+                </span>
+                {currentScenario.mockMode && (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
+                    Mock mode
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{currentScenario.title}</h3>
+              <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-300 sm:text-base">{currentScenario.description}</p>
+
+              <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-400">
+                {currentRunMeta.map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                    {item}
+                  </span>
+                ))}
+                {currentScenario.uploadedFile && (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                    <FileText className="h-3.5 w-3.5" />
+                    {currentScenario.uploadedFile.name}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <span
-                className={`rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] ${
-                  currentScenario.status === 'completed'
-                    ? 'border border-miro-accent/30 bg-miro-accent/10 text-miro-accent'
-                    : currentScenario.status === 'failed'
-                    ? 'border border-red-400/20 bg-red-500/10 text-red-200'
-                    : 'border border-miro-glow/30 bg-miro-glow/10 text-miro-glow'
-                }`}
-              >
-                {currentScenario.status === 'running'
-                  ? currentScenario.progress?.stage ?? 'running'
-                  : formatStatusLabel(currentScenario.status)}
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowScenarioForm((open) => !open)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-              >
-                <Plus className="h-4 w-4" />
-                {showScenarioForm ? 'Hide new run form' : 'Start another run'}
-              </button>
-            </div>
-          </div>
+            <aside className="soft-panel rounded-[30px] p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500">Controls</p>
+                  <p className="mt-1 text-lg font-semibold text-white">Manage the workspace</p>
+                </div>
+                <Sparkles className="h-4 w-4 text-miro-accent" />
+              </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-              {SIMULATION_ROUNDS} rounds
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-              {AGENT_COUNT} agents
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-              Updated {formatUpdatedAt(currentScenario.updatedAt)}
-            </span>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowScenarioForm((open) => !open)}
+                  className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                >
+                  <span>{showScenarioForm ? 'Hide new run form' : 'Start another run'}</span>
+                  <Plus className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('history')}
+                  className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                >
+                  <span>Open historic runs</span>
+                  <History className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('docs')}
+                  className="flex w-full items-center justify-between rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                >
+                  <span>Read usage guide</span>
+                  <BookOpen className="h-4 w-4" />
+                </button>
+              </div>
+            </aside>
           </div>
-        </div>
+        </section>
       )}
 
-      {currentScenario && showScenarioForm && (
-        <ScenarioInput onSubmit={handleScenarioSubmit} isLoading={isSimulating} />
-      )}
+      {currentScenario && showScenarioForm && <ScenarioInput onSubmit={handleScenarioSubmit} isLoading={isSimulating} />}
 
       {isSimulating && (
-        <section className="glass-panel rounded-[28px] p-5 sm:p-6 glow-border">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-center">
-              <Users className="mx-auto h-5 w-5 text-miro-accent" />
-              <p className="mt-3 text-sm font-medium text-white">
-                {currentScenario?.progress?.stage === 'initializing' ? 'Generating personas' : `${AGENT_COUNT} agents ready`}
-              </p>
-            </div>
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-center">
-              <Activity className="mx-auto h-5 w-5 text-miro-teal" />
-              <p className="mt-3 text-sm font-medium text-white">
-                Round {currentScenario?.progress?.currentRound ?? 0} / {currentScenario?.progress?.totalRounds ?? SIMULATION_ROUNDS}
-              </p>
-            </div>
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-center">
-              <TrendingUp className="mx-auto h-5 w-5 text-miro-glow" />
-              <p className="mt-3 text-sm font-medium text-white">
-                {currentScenario?.progress?.message || 'Running simulation'}
-              </p>
-            </div>
+        <section className="grid gap-3 sm:grid-cols-3">
+          <div className="soft-panel rounded-[26px] p-5 text-center">
+            <Users className="mx-auto h-5 w-5 text-miro-accent" />
+            <p className="mt-3 text-sm font-medium text-white">
+              {currentScenario?.progress?.stage === 'initializing' ? 'Generating personas' : `${AGENT_COUNT} agents staged`}
+            </p>
+          </div>
+          <div className="soft-panel rounded-[26px] p-5 text-center">
+            <Activity className="mx-auto h-5 w-5 text-miro-teal" />
+            <p className="mt-3 text-sm font-medium text-white">
+              Round {currentScenario?.progress?.currentRound ?? 0} / {currentScenario?.progress?.totalRounds ?? SIMULATION_ROUNDS}
+            </p>
+          </div>
+          <div className="soft-panel rounded-[26px] p-5 text-center">
+            <TrendingUp className="mx-auto h-5 w-5 text-miro-glow" />
+            <p className="mt-3 text-sm font-medium text-white">
+              {currentScenario?.progress?.message || 'Running simulation'}
+            </p>
           </div>
         </section>
       )}
 
       {currentScenario?.status === 'completed' && results && (
-        <section className="space-y-4">
-          <div className="glass-panel rounded-[24px] p-3 glow-border">
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {workspaceTabs.map(({ id, label, icon: Icon }) => {
+        <section className="space-y-5">
+          <div className="glass-panel rounded-[28px] p-2">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {workspaceTabs.map(({ id, label, icon: Icon, description }) => {
                 const isActive = activeWorkspaceView === id
 
                 return (
@@ -579,14 +695,17 @@ export default function Home() {
                     key={id}
                     type="button"
                     onClick={() => setActiveWorkspaceView(id)}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
+                    className={`min-w-fit rounded-[22px] px-4 py-3 text-left transition-all ${
                       isActive
-                        ? 'bg-gradient-to-r from-miro-accent via-miro-teal to-miro-glow text-slate-950'
+                        ? 'bg-gradient-to-r from-[#fff1cf] via-miro-glow to-miro-accent text-slate-950 shadow-[0_16px_30px_rgba(247,191,117,0.16)]'
                         : 'border border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/[0.08]'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    {label}
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </div>
+                    <p className={`mt-1 text-xs ${isActive ? 'text-slate-800/80' : 'text-slate-500'}`}>{description}</p>
                   </button>
                 )
               })}
@@ -594,107 +713,143 @@ export default function Home() {
           </div>
 
           {activeWorkspaceView === 'overview' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <StatsPanel stats={stats} isLoading={isSimulating} />
               <SimulationResults scenario={currentScenario} />
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="glass-panel rounded-[28px] p-5 glow-border">
-                  <div className="section-label mb-4">Top influencers</div>
+              <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+                <section className="glass-panel rounded-[30px] p-5 sm:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="section-label">Top influencers</div>
+                      <p className="mt-3 text-sm text-slate-400">The agents with the highest influence at the end of the run.</p>
+                    </div>
+                    <Users className="h-4 w-4 text-miro-accent" />
+                  </div>
+
                   <div className="space-y-3">
-                    {topInfluencers.map((agent) => (
-                      <div key={agent.id} className="flex items-center gap-3 rounded-[20px] border border-white/10 bg-black/20 p-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-miro-teal via-miro-accent to-miro-glow text-sm font-semibold text-slate-950">
-                          {agent.name.charAt(0)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-white">{agent.name}</p>
-                          <p className="truncate text-xs text-slate-500">{agent.role}</p>
-                        </div>
-                        <div className="rounded-full border border-miro-accent/25 bg-miro-accent/10 px-2.5 py-1 text-xs font-medium text-miro-accent">
-                          {(agent.influence * 100).toFixed(0)}%
+                    {topInfluencers.map((agent, index) => (
+                      <div key={agent.id} className="soft-panel rounded-[22px] p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-miro-teal via-miro-accent to-miro-glow text-sm font-semibold text-slate-950">
+                            {agent.name.charAt(0)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-white">{agent.name}</p>
+                              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-400">
+                                #{index + 1}
+                              </span>
+                            </div>
+                            <p className="truncate text-xs text-slate-500">{agent.role}</p>
+                          </div>
+                          <div className="rounded-full border border-miro-accent/25 bg-miro-accent/10 px-2.5 py-1 text-xs font-medium text-miro-accent">
+                            {(agent.influence * 100).toFixed(0)}%
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
 
-                <div className="glass-panel rounded-[28px] p-5 glow-border">
-                  <div className="section-label mb-4">Event summary</div>
+                <section className="glass-panel rounded-[30px] p-5 sm:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="section-label">Event profile</div>
+                      <p className="mt-3 text-sm text-slate-400">Which event types dominated this simulation.</p>
+                    </div>
+                    <Activity className="h-4 w-4 text-miro-glow" />
+                  </div>
+
                   <div className="space-y-3">
                     {eventSummary.map((item) => (
-                      <div
-                        key={item.type}
-                        className="flex items-center justify-between rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm"
-                      >
-                        <span className="capitalize text-slate-300">{item.type.replace('_', ' ')}</span>
-                        <span className="font-semibold text-white">{item.count}</span>
+                      <div key={item.type} className="soft-panel rounded-[22px] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="capitalize text-slate-300">{formatEventType(item.type)}</span>
+                          <span className="text-lg font-semibold text-white">{item.count}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
               </div>
             </div>
           )}
 
           {activeWorkspaceView === 'feed' && (
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
               <SocialFeed posts={results.posts} agents={results.agents} />
               <EventTimeline events={results.events} isLoading={isSimulating} />
             </div>
           )}
 
           {activeWorkspaceView === 'network' && (
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
               <AgentNetwork agents={results.agents} events={results.events} isLoading={isSimulating} />
-              <div className="glass-panel rounded-[28px] p-5 glow-border">
-                <div className="section-label mb-4">Sentiment split</div>
+              <section className="glass-panel rounded-[30px] p-5 sm:p-6">
+                <div className="mb-4">
+                  <div className="section-label">Sentiment split</div>
+                  <p className="mt-3 text-sm text-slate-400">Where the swarm settled by the final round.</p>
+                </div>
+
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span className="inline-flex items-center gap-2 text-miro-accent">
-                      <span className="h-2.5 w-2.5 rounded-full bg-miro-accent" />
-                      Positive
-                    </span>
-                    <span className="font-semibold text-white">{stats.positiveAgents}</span>
+                  <div className="soft-panel rounded-[22px] px-4 py-4 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-2 text-miro-accent">
+                        <span className="h-2.5 w-2.5 rounded-full bg-miro-accent" />
+                        Positive
+                      </span>
+                      <span className="font-semibold text-white">{stats.positiveAgents}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span className="inline-flex items-center gap-2 text-slate-300">
-                      <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
-                      Neutral
-                    </span>
-                    <span className="font-semibold text-white">{stats.neutralAgents}</span>
+                  <div className="soft-panel rounded-[22px] px-4 py-4 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-2 text-slate-300">
+                        <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                        Neutral
+                      </span>
+                      <span className="font-semibold text-white">{stats.neutralAgents}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span className="inline-flex items-center gap-2 text-miro-amber">
-                      <span className="h-2.5 w-2.5 rounded-full bg-miro-amber" />
-                      Negative
-                    </span>
-                    <span className="font-semibold text-white">{stats.negativeAgents}</span>
+                  <div className="soft-panel rounded-[22px] px-4 py-4 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-2 text-miro-amber">
+                        <span className="h-2.5 w-2.5 rounded-full bg-miro-amber" />
+                        Negative
+                      </span>
+                      <span className="font-semibold text-white">{stats.negativeAgents}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </section>
             </div>
           )}
 
           {activeWorkspaceView === 'events' && (
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
               <EventTimeline events={results.events} isLoading={isSimulating} />
-              <div className="glass-panel rounded-[28px] p-5 glow-border">
-                <div className="section-label mb-4">Prediction confidence</div>
-                <div className="rounded-[22px] border border-miro-glow/20 bg-miro-glow/10 p-5">
-                  <p className="text-4xl font-semibold text-white">{(stats.predictionConfidence * 100).toFixed(0)}%</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
-                    Higher confidence means the swarm settled into more coherent shared positions.
+              <section className="glass-panel rounded-[30px] p-5 sm:p-6">
+                <div className="mb-4">
+                  <div className="section-label">Prediction confidence</div>
+                  <p className="mt-3 text-sm text-slate-400">A rough measure of how coherently the swarm settled.</p>
+                </div>
+
+                <div className="rounded-[26px] border border-miro-glow/20 bg-gradient-to-br from-miro-glow/12 to-white/[0.03] p-5">
+                  <p className="text-5xl font-semibold tracking-tight text-white">
+                    {(stats.predictionConfidence * 100).toFixed(0)}%
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">
+                    Higher confidence means the swarm ended in a tighter pattern of beliefs rather than fragmenting into many incompatible narratives.
                   </p>
                 </div>
-              </div>
+              </section>
             </div>
           )}
         </section>
       )}
 
       {currentScenario?.status === 'failed' && !isSimulating && (
-        <section className="glass-panel rounded-[28px] px-6 py-10 text-center glow-border sm:px-8">
+        <section className="glass-panel rounded-[34px] px-6 py-10 text-center sm:px-8">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/15 text-2xl">
             ⚠️
           </div>
@@ -709,7 +864,7 @@ export default function Home() {
               setError(null)
               setShowScenarioForm(true)
             }}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-miro-accent via-miro-teal to-miro-glow px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:-translate-y-0.5"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#fff1cf] via-miro-glow to-miro-accent px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:-translate-y-0.5"
           >
             Try again
             <ArrowRight className="h-4 w-4" />
@@ -721,20 +876,43 @@ export default function Home() {
 
   const renderHistory = () => (
     <div className="space-y-5">
-      {renderPageIntro(
-        'Browse historic runs.',
-        'This view is only for reopening and reviewing past simulations. Starting a new run stays in the workspace.'
-      )}
+      <section className="glass-panel hero-shell ambient-ring rounded-[36px] p-5 sm:p-6 lg:p-7">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_360px]">
+          <div>
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="eyebrow-pill">Historic runs</div>
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
+                Global library for this studio
+              </div>
+            </div>
 
-      <div className="glass-panel rounded-[24px] p-4 glow-border">
-        <input
-          type="search"
-          value={historyQuery}
-          onChange={(event) => setHistoryQuery(event.target.value)}
-          placeholder="Search by title, description, or summary"
-          className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/20"
-        />
-      </div>
+            <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Reopen anything you have simulated.
+            </h2>
+            <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-300 sm:text-base">
+              Search by title, scenario description, or summary text. Select a run to preview it, then jump back into the workspace for the full feed, network, and timeline.
+            </p>
+          </div>
+
+          <aside className="soft-panel rounded-[30px] p-5 sm:p-6">
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500">Library controls</p>
+            <p className="mt-2 text-lg font-semibold text-white">Search and reopen</p>
+
+            <div className="mt-4 rounded-[24px] border border-white/10 bg-black/20 p-4">
+              <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                Search saved runs
+              </label>
+              <input
+                type="search"
+                value={historyQuery}
+                onChange={(event) => setHistoryQuery(event.target.value)}
+                placeholder="Title, description, or summary"
+                className="w-full rounded-[18px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/20"
+              />
+            </div>
+          </aside>
+        </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
         <ScenarioHistory
@@ -745,38 +923,44 @@ export default function Home() {
           onSelect={loadScenarioById}
         />
 
-        <div className="glass-panel rounded-[28px] p-5 glow-border">
-          <div className="section-label mb-4">Selected run</div>
+        <section className="glass-panel rounded-[32px] p-5 sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="section-label">Selected run</div>
+              <p className="mt-3 text-sm text-slate-400">Preview the active item before opening it in the workspace.</p>
+            </div>
+            <History className="h-4 w-4 text-miro-accent" />
+          </div>
 
           {currentHistoryItem ? (
             <div className="space-y-4">
-              <div>
-                <h3 className="text-xl font-semibold text-white">{currentHistoryItem.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-300">{currentHistoryItem.description}</p>
-              </div>
+              <div className="rounded-[26px] border border-white/10 bg-black/20 p-5">
+                <h3 className="text-2xl font-semibold tracking-tight text-white">{currentHistoryItem.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{currentHistoryItem.description}</p>
 
-              <div className="flex flex-wrap gap-2 text-xs text-slate-400">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                  {formatStatusLabel(currentHistoryItem.status)}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                  Updated {formatUpdatedAt(currentHistoryItem.updatedAt)}
-                </span>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                    {formatStatusLabel(currentHistoryItem.status)}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                    Updated {formatUpdatedAt(currentHistoryItem.updatedAt)}
+                  </span>
+                </div>
               </div>
 
               {currentHistoryItem.summaryExcerpt && (
-                <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-7 text-slate-300">
+                <div className="soft-panel rounded-[24px] p-4 text-sm leading-7 text-slate-300">
                   {currentHistoryItem.summaryExcerpt}
                 </div>
               )}
 
               {currentHistoryItem.resultCounts && (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[20px] border border-white/10 bg-black/20 p-4">
+                  <div className="soft-panel rounded-[22px] p-4">
                     <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Posts</p>
                     <p className="mt-2 text-2xl font-semibold text-white">{currentHistoryItem.resultCounts.posts}</p>
                   </div>
-                  <div className="rounded-[20px] border border-white/10 bg-black/20 p-4">
+                  <div className="soft-panel rounded-[22px] p-4">
                     <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Rounds</p>
                     <p className="mt-2 text-2xl font-semibold text-white">{currentHistoryItem.resultCounts.rounds}</p>
                   </div>
@@ -790,28 +974,39 @@ export default function Home() {
                   setShowScenarioForm(false)
                   setActiveWorkspaceView('overview')
                 }}
-                className="inline-flex items-center gap-2 rounded-full border border-miro-accent/25 bg-miro-accent/10 px-4 py-2 text-sm font-medium text-miro-accent transition-colors hover:bg-miro-accent/15"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#fff1cf] via-miro-glow to-miro-accent px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:-translate-y-0.5"
               >
                 Open in workspace
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           ) : (
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-7 text-slate-400">
-              Select a run to review it here, then open it in the workspace if you want the full feed, network, and timeline views.
+            <div className="rounded-[24px] border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-400">
+              Select a run to preview it here, then open it in the workspace when you want the full analytical views.
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   )
 
   const renderDocs = () => (
     <div className="space-y-5">
-      {renderPageIntro(
-        'Learn how to use MiroFish.',
-        'This page focuses on the user workflow: writing stronger scenarios, running simulations, and reading the outputs.'
-      )}
+      <section className="glass-panel hero-shell ambient-ring rounded-[36px] p-5 sm:p-6 lg:p-7">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="eyebrow-pill">Usage guide</div>
+          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
+            Workflow, prompts, and interpretation
+          </div>
+        </div>
+
+        <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          Learn the workflow once, move faster every run after that.
+        </h2>
+        <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-300 sm:text-base">
+          This section focuses on practical usage: how to phrase better scenarios, when to ground the run with documents, and how to read the results without getting lost in the noise.
+        </p>
+      </section>
       <DocsPanel />
     </div>
   )
@@ -825,8 +1020,8 @@ export default function Home() {
         onNavigate={setActiveView}
       />
 
-      <div className="mx-auto max-w-[1120px] px-4 pb-10 pt-6 sm:px-6 sm:pt-8">
-        {activeView === 'workspace' && renderWorkspace()}
+      <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        {activeView === 'workspace' && renderWorkspaceOverview()}
         {activeView === 'history' && renderHistory()}
         {activeView === 'docs' && renderDocs()}
       </div>

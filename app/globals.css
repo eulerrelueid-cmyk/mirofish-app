@@ -4,20 +4,23 @@
 
 :root {
   color-scheme: dark;
-  --foreground-rgb: 239, 246, 251;
-  --background-base: #07131d;
-  --background-deep: #0d1c28;
-  --background-warm: #142d36;
-  --panel: rgba(12, 27, 38, 0.68);
-  --panel-strong: rgba(10, 22, 32, 0.88);
-  --border: rgba(190, 219, 233, 0.14);
-  --border-strong: rgba(242, 221, 180, 0.22);
-  --shadow: 0 22px 80px rgba(0, 0, 0, 0.32);
-  --accent: #72e0c5;
-  --accent-soft: rgba(114, 224, 197, 0.18);
-  --glow: #f3b35f;
-  --glow-soft: rgba(243, 179, 95, 0.18);
-  --sky: #5fc5ff;
+  --foreground-rgb: 244, 247, 242;
+  --background-base: #081019;
+  --background-deep: #0f1822;
+  --background-warm: #14222d;
+  --panel: rgba(13, 24, 34, 0.74);
+  --panel-strong: rgba(9, 18, 27, 0.92);
+  --panel-soft: rgba(18, 31, 42, 0.72);
+  --border: rgba(226, 234, 239, 0.11);
+  --border-strong: rgba(255, 212, 138, 0.24);
+  --shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+  --accent: #82efcf;
+  --accent-soft: rgba(130, 239, 207, 0.18);
+  --glow: #f7bf75;
+  --glow-soft: rgba(247, 191, 117, 0.18);
+  --sky: #84c9ff;
+  --ink-muted: rgba(219, 226, 231, 0.68);
+  --ink-soft: rgba(244, 247, 242, 0.86);
 }
 
 * {
@@ -33,13 +36,14 @@ html {
 body {
   color: rgb(var(--foreground-rgb));
   background:
-    radial-gradient(circle at top left, rgba(114, 224, 197, 0.18), transparent 30%),
-    radial-gradient(circle at top right, rgba(243, 179, 95, 0.12), transparent 34%),
-    linear-gradient(180deg, var(--background-base) 0%, var(--background-deep) 52%, #091621 100%);
+    radial-gradient(circle at 8% 12%, rgba(130, 239, 207, 0.18), transparent 24%),
+    radial-gradient(circle at 88% 10%, rgba(247, 191, 117, 0.16), transparent 26%),
+    radial-gradient(circle at 50% 120%, rgba(132, 201, 255, 0.14), transparent 34%),
+    linear-gradient(180deg, #071018 0%, var(--background-deep) 46%, #0a131b 100%);
   min-height: 100vh;
   overflow-x: hidden;
   font-family: var(--font-display), system-ui, sans-serif;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   overscroll-behavior-y: none;
   position: relative;
 }
@@ -55,19 +59,19 @@ body::after {
 
 body::before {
   background:
-    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-size: 96px 96px;
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 88px 88px;
   mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 88%);
-  opacity: 0.14;
+  opacity: 0.12;
 }
 
 body::after {
   background:
-    radial-gradient(circle at 20% 10%, rgba(114, 224, 197, 0.18), transparent 24%),
-    radial-gradient(circle at 78% 16%, rgba(243, 179, 95, 0.16), transparent 20%),
-    radial-gradient(circle at 50% 100%, rgba(95, 197, 255, 0.12), transparent 28%);
-  filter: blur(56px);
+    radial-gradient(circle at 18% 10%, rgba(130, 239, 207, 0.16), transparent 24%),
+    radial-gradient(circle at 82% 16%, rgba(247, 191, 117, 0.16), transparent 20%),
+    radial-gradient(circle at 50% 100%, rgba(132, 201, 255, 0.1), transparent 26%);
+  filter: blur(64px);
   opacity: 0.9;
 }
 
@@ -79,9 +83,9 @@ body::after {
 
 .glass-panel {
   background:
-    linear-gradient(180deg, rgba(19, 37, 49, 0.92), rgba(10, 24, 34, 0.82)),
+    linear-gradient(180deg, rgba(18, 30, 41, 0.96), rgba(9, 19, 28, 0.86)),
     var(--panel);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
@@ -112,9 +116,9 @@ body::after {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 12% 18%, rgba(114, 224, 197, 0.22), transparent 24%),
-    radial-gradient(circle at 90% 18%, rgba(243, 179, 95, 0.22), transparent 22%),
-    linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 38%);
+    radial-gradient(circle at 12% 18%, rgba(130, 239, 207, 0.2), transparent 24%),
+    radial-gradient(circle at 90% 18%, rgba(247, 191, 117, 0.2), transparent 22%),
+    linear-gradient(140deg, rgba(255, 255, 255, 0.05), transparent 38%);
   pointer-events: none;
 }
 
@@ -134,11 +138,11 @@ body::after {
   padding: 0.45rem 0.8rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(223, 233, 242, 0.88);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(233, 239, 244, 0.9);
   font-size: 0.72rem;
   font-family: var(--font-mono), monospace;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -155,6 +159,14 @@ body::after {
   background: linear-gradient(180deg, rgba(13, 29, 40, 0.88), rgba(9, 21, 31, 0.72));
   border: 1px solid rgba(223, 233, 242, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.soft-panel {
+  background: linear-gradient(180deg, rgba(20, 33, 44, 0.72), rgba(10, 18, 27, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
 .surface-border {
@@ -179,6 +191,55 @@ body::after {
 .metric-sheen {
   background-image: linear-gradient(100deg, transparent 15%, rgba(255, 255, 255, 0.18) 50%, transparent 85%);
   background-size: 220% 100%;
+}
+
+.lux-grid {
+  position: relative;
+}
+
+.lux-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.6), transparent 90%);
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.ambient-ring {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 24px 60px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(130, 239, 207, 0.04);
+}
+
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.5rem 0.9rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(236, 241, 245, 0.82);
+}
+
+.eyebrow-pill::before {
+  content: '';
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--glow), var(--accent));
+  box-shadow: 0 0 18px rgba(247, 191, 117, 0.34);
 }
 
 /* Custom scrollbar - hidden on mobile */

@@ -7,7 +7,7 @@ import {
   mergeScenarioGrounding,
   type ParsedScenarioUpload,
 } from '@/lib/document-parser'
-import { ensureScenarioOwner, getScenarioOwnerHash, setScenarioOwnerCookie } from '@/lib/scenario-owner'
+import { ensureScenarioOwner, setScenarioOwnerCookie } from '@/lib/scenario-owner'
 import { getStaleScenarioMessage, isScenarioStale, type RawScenarioMetadata } from '@/lib/simulation-contract'
 import { markScenarioFailed, updateScenarioProgress } from '@/lib/simulation-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -212,7 +212,6 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scenarioId = searchParams.get('id')
-  const ownerHash = getScenarioOwnerHash(request)
 
   if (!scenarioId) {
     return NextResponse.json(
@@ -221,19 +220,11 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  if (!ownerHash) {
-    return NextResponse.json(
-      { error: 'Scenario not found' },
-      { status: 404 }
-    )
-  }
-
   try {
     const { data: scenario, error: scenarioError } = await supabaseAdmin
       .from('mirofish_scenarios')
       .select('id,title,description,seed_text,uploaded_file,status,created_at,updated_at,parameters,results')
       .eq('id', scenarioId)
-      .eq('owner_token_hash', ownerHash)
       .single()
 
     if (scenarioError) {

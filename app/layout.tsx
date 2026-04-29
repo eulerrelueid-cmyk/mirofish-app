@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { IBM_Plex_Mono, Space_Grotesk } from 'next/font/google'
+import { IBM_Plex_Mono, Sora } from 'next/font/google'
 import './globals.css'
 
-const spaceGrotesk = Space_Grotesk({
+const sora = Sora({
   subsets: ['latin'],
   variable: '--font-display',
 })
@@ -14,8 +14,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'MiroFish | Scenario Intelligence Studio',
-  description: 'Shape a scenario, launch a multi-agent social simulation, and track how opinions, signals, and consensus emerge.',
+  title: 'MiroFish | Decision Simulation Studio',
+  description: 'Shape scenarios, ground them with source material, and inspect how a multi-agent swarm converges, escalates, and predicts outcomes.',
 }
 
 export const viewport: Viewport = {
@@ -33,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
+      <body className={`${sora.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>
