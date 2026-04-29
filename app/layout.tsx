@@ -15,7 +15,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: 'MiroFish | Decision Simulation Studio',
-  description: 'Shape scenarios, ground them with source material, and inspect how a multi-agent swarm converges, escalates, and predicts outcomes.',
+  description: 'Run scenarios, optionally ground them with source material, and inspect the resulting simulation.',
 }
 
 export const viewport: Viewport = {

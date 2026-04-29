@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, ExternalLink, Fish, Github, History, LayoutDashboard, Menu, Sparkles, X } from 'lucide-react'
+import { BookOpen, Fish, History, LayoutDashboard, Menu, Sparkles, X } from 'lucide-react'
 
 type AppView = 'workspace' | 'history' | 'docs'
 
@@ -15,27 +15,11 @@ interface HeaderProps {
 const navItems: Array<{
   id: AppView
   label: string
-  description: string
   icon: typeof LayoutDashboard
 }> = [
-  {
-    id: 'workspace',
-    label: 'Workspace',
-    description: 'Run or inspect simulations',
-    icon: LayoutDashboard,
-  },
-  {
-    id: 'history',
-    label: 'Historic runs',
-    description: 'Browse previous simulations',
-    icon: History,
-  },
-  {
-    id: 'docs',
-    label: 'How to use it',
-    description: 'User guidance and tips',
-    icon: BookOpen,
-  },
+  { id: 'workspace', label: 'Workspace', icon: LayoutDashboard },
+  { id: 'history', label: 'History', icon: History },
+  { id: 'docs', label: 'How to use it', icon: BookOpen },
 ]
 
 function formatStatusLabel(status?: string) {
@@ -56,26 +40,19 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07111a]/72 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07111a]/78 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] border border-white/10 bg-gradient-to-br from-[#fff4d5] via-miro-glow to-miro-accent text-slate-950 shadow-[0_16px_30px_rgba(247,191,117,0.2)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-gradient-to-br from-[#fff4d5] via-miro-glow to-miro-accent text-slate-950">
               <Fish className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">MiroFish</h1>
-                <span className="hidden rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 md:inline-flex">
-                  Single-user studio
-                </span>
-              </div>
-              <p className="truncate text-sm text-slate-400">
-                {currentScenarioTitle || 'Scenario intelligence workspace'}
-              </p>
+              <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">MiroFish</h1>
+              <p className="truncate text-sm text-slate-500">{currentScenarioTitle || 'Simulation workspace'}</p>
             </div>
           </div>
 
-          <div className="hidden items-center gap-2 lg:flex">
+          <nav className="hidden items-center gap-2 lg:flex">
             <div className="rounded-full border border-white/10 bg-white/5 p-1">
               {navItems.map(({ id, label, icon: Icon }) => {
                 const isActive = activeView === id
@@ -97,23 +74,17 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
                 )
               })}
             </div>
-          </div>
+          </nav>
 
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 md:flex">
-              <Sparkles className="h-4 w-4 text-miro-accent" />
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-300">
-                {formatStatusLabel(currentScenarioStatus)}
-              </span>
-            </div>
-            <a
-              href="https://github.com/666ghj/MiroFish"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex"
-            >
-              Upstream
-            </a>
+            {currentScenarioStatus && (
+              <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 md:flex">
+                <Sparkles className="h-4 w-4 text-miro-accent" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-300">
+                  {formatStatusLabel(currentScenarioStatus)}
+                </span>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
@@ -140,7 +111,7 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-slate-500">Menu</p>
-                <p className="mt-1 text-lg font-semibold text-white">Navigate the studio</p>
+                <p className="mt-1 text-lg font-semibold text-white">Navigate</p>
               </div>
               <button
                 type="button"
@@ -153,7 +124,7 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
             </div>
 
             <div className="space-y-2">
-              {navItems.map(({ id, label, description, icon: Icon }) => {
+              {navItems.map(({ id, label, icon: Icon }) => {
                 const isActive = activeView === id
 
                 return (
@@ -167,14 +138,15 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
                         : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.08]'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isActive ? 'bg-miro-accent/15 text-miro-accent' : 'bg-black/20 text-slate-400'}`}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                          isActive ? 'bg-miro-accent/15 text-miro-accent' : 'bg-black/20 text-slate-400'
+                        }`}
+                      >
                         <Icon className="h-5 w-5" />
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-white">{label}</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
-                      </div>
+                      <p className="text-sm font-semibold text-white">{label}</p>
                     </div>
                   </button>
                 )
@@ -185,27 +157,6 @@ export function Header({ activeView, currentScenarioTitle, currentScenarioStatus
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Current run</p>
               <p className="mt-2 text-sm font-medium text-white">{currentScenarioTitle || 'No run selected'}</p>
               <p className="mt-1 text-sm text-slate-400">{formatStatusLabel(currentScenarioStatus)}</p>
-            </div>
-
-            <div className="mt-auto space-y-2 border-t border-white/10 pt-4">
-              <a
-                href="https://github.com/eulerrelueid-cmyk/mirofish-app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-[20px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-              >
-                App repository
-                <Github className="h-4 w-4" />
-              </a>
-              <a
-                href="https://github.com/666ghj/MiroFish"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-[20px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-              >
-                Original project
-                <ExternalLink className="h-4 w-4" />
-              </a>
             </div>
           </aside>
         </div>

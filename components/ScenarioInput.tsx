@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { ArrowRight, ChevronDown, FileText, Sparkles, Upload, Wand2, X } from 'lucide-react'
+import { ArrowRight, ChevronDown, FileText, Upload, X } from 'lucide-react'
 
 interface ScenarioInputProps {
   onSubmit: (title: string, description: string, seedText?: string, file?: File) => void
@@ -10,9 +10,9 @@ interface ScenarioInputProps {
 }
 
 const examplePrompts = [
-  'Will an AI-first product launch trigger trust concerns or rapid adoption?',
+  'Will an AI-first product launch trigger trust concerns or fast adoption?',
   'How does a policy rumor spread across technical, media, and investor groups?',
-  'Which narrative wins when a competitor undercuts pricing in public?',
+  'Which narrative wins when a competitor cuts pricing in public?',
 ]
 
 export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
@@ -46,95 +46,62 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
   }
 
   return (
-    <div className="glass-panel hero-shell ambient-ring rounded-[34px] p-5 sm:p-6 lg:p-7">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_320px]">
+    <section className="glass-panel rounded-[32px] p-5 sm:p-6 lg:p-7">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <div className="eyebrow-pill">Compose a run</div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
-              Grounded upload support is live
-            </div>
-          </div>
-
-          <div className="mb-5 max-w-3xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Write a scenario worth simulating.
-            </h2>
-            <p className="mt-3 text-sm leading-8 text-slate-300 sm:text-base">
-              Set the trigger, the audience pressure, and the outcome you want the swarm to test. Add source material when you want the run anchored in real documents instead of freeform reasoning.
-            </p>
-          </div>
-
-          <div className="mb-5 grid gap-3 md:grid-cols-3">
-            {examplePrompts.map((prompt, index) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => setDescription(prompt)}
-                className="soft-panel rounded-[22px] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06]"
-              >
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">Prompt {index + 1}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-200">{prompt}</p>
-              </button>
-            ))}
-          </div>
+          <div className="section-label">New run</div>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Write the scenario and run it.</h2>
         </div>
-
-        <aside className="soft-panel rounded-[28px] p-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#fff1cf] via-miro-glow to-miro-accent text-slate-950">
-              <Wand2 className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-white">Better prompts</p>
-              <p className="text-sm text-slate-400">Three fields matter most.</p>
-            </div>
-          </div>
-
-          <div className="space-y-3 text-sm leading-7 text-slate-300">
-            <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
-              State the exact trigger: launch, leak, rumor, pricing move, or policy change.
-            </div>
-            <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
-              Name the audience under pressure: buyers, press, investors, or internal teams.
-            </div>
-            <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
-              Ask for a decision-shaped outcome, not a vague opinion.
-            </div>
-          </div>
-        </aside>
+        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-400">
+          Title, prompt, execute
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-        <div>
-          <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-slate-400">Scenario title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="AI pricing shock across enterprise buyers"
-            className="w-full rounded-[22px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
-            required
-          />
+      <div className="mb-5 flex flex-wrap gap-2">
+        {examplePrompts.map((prompt, index) => (
+          <button
+            key={prompt}
+            type="button"
+            onClick={() => setDescription(prompt)}
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+          >
+            Example {index + 1}
+          </button>
+        ))}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <div>
+            <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-slate-400">Scenario title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="AI pricing shock across enterprise buyers"
+              className="w-full rounded-[20px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-slate-400">Prompt</label>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Describe the trigger, the audience, and the outcome you want the simulation to test."
+              rows={5}
+              className="w-full resize-none rounded-[24px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
+              required
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-slate-400">What should the swarm predict?</label>
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Describe the trigger, the audience, and the outcome you want the agents to react to."
-            rows={5}
-            className="w-full resize-none rounded-[24px] border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25 sm:text-base"
-            required
-          />
-        </div>
-
-        <details className="group rounded-[26px] border border-white/10 bg-black/20">
+        <details className="group rounded-[24px] border border-white/10 bg-black/20">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4">
             <div className="text-left">
               <p className="text-sm font-semibold text-white">Optional grounding</p>
-              <p className="text-sm text-slate-400">Paste notes or attach one file to anchor the run in concrete material.</p>
+              <p className="text-sm text-slate-500">Add notes or one file only when you want the run tied to source material.</p>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-400 transition-transform group-open:rotate-180">
               <ChevronDown className="h-4 w-4" />
@@ -147,7 +114,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
               <textarea
                 value={seedText}
                 onChange={(event) => setSeedText(event.target.value)}
-                placeholder="Paste research notes, quotes, or signals."
+                placeholder="Paste research notes, quotes, or context."
                 rows={6}
                 className="w-full resize-none rounded-[22px] border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-miro-accent focus:outline-none focus:ring-2 focus:ring-miro-accent/25"
               />
@@ -196,15 +163,7 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
           </div>
         </details>
 
-        <div className="flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-miro-accent">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <p className="max-w-2xl text-sm leading-7 text-slate-400">
-              Start with a decisive prompt. If the swarm feels too generic, add grounding and rerun instead of making the scenario longer.
-            </p>
-          </div>
+        <div className="flex justify-end border-t border-white/10 pt-5">
           <button
             type="submit"
             disabled={isLoading || !title || !description}
@@ -213,17 +172,17 @@ export function ScenarioInput({ onSubmit, isLoading }: ScenarioInputProps) {
             {isLoading ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/25 border-t-slate-950" />
-                Running simulation
+                Running
               </>
             ) : (
               <>
-                Start simulation
+                Run simulation
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
         </div>
       </form>
-    </div>
+    </section>
   )
 }

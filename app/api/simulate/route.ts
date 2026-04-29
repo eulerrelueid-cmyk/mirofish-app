@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { start } from 'workflow/api'
 
-import {
-  DocumentParserError,
-  parseUploadedScenarioFile,
-  mergeScenarioGrounding,
-  type ParsedScenarioUpload,
-} from '@/lib/document-parser'
 import { ensureScenarioOwner, setScenarioOwnerCookie } from '@/lib/scenario-owner'
 import { getStaleScenarioMessage, isScenarioStale, type RawScenarioMetadata } from '@/lib/simulation-contract'
 import { markScenarioFailed, updateScenarioProgress } from '@/lib/simulation-store'
@@ -24,7 +18,15 @@ interface ParsedScenarioRequest {
   description: string
   seedText?: string
   userId: string | null
-  uploadedFile: ParsedScenarioUpload | null
+  uploadedFile: {
+    extractedText: string
+    metadata: {
+      name: string
+      type: string
+      size: number
+      extractedCharacters: number
+    }
+  } | null
   combinedSeedText?: string
 }
 
@@ -41,6 +43,7 @@ async function parseScenarioRequest(request: NextRequest): Promise<ParsedScenari
   const contentType = request.headers.get('content-type') || ''
 
   if (contentType.includes('multipart/form-data')) {
+    const { mergeScenarioGrounding, parseUploadedScenarioFile } = await import('@/lib/document-parser')
     const formData = await request.formData()
     const title = normalizeField(formData.get('title'))
     const description = normalizeField(formData.get('description'))
@@ -188,7 +191,7 @@ export async function POST(request: NextRequest) {
       throw simError
     }
   } catch (error) {
-    if (error instanceof DocumentParserError) {
+    if (error instanceof Error && error.name === 'DocumentParserError') {
       return NextResponse.json(
         { error: error.message },
         { status: 400 }
