@@ -3,6 +3,7 @@
 import { Compass, FileText, Layers3, Radar, Sparkles } from 'lucide-react'
 
 import { buildProjectWorkflow } from '@/lib/project-workflow'
+import { SimulationInterviewPanel } from '@/components/SimulationInterviewPanel'
 import type { SimulationScenario } from '@/types/simulation'
 
 interface SimulationReportPanelProps {
@@ -246,6 +247,8 @@ export function SimulationReportPanel({ scenario }: SimulationReportPanelProps) 
           </div>
         </section>
       )}
+
+      <SimulationInterviewPanel scenario={scenario} />
     </div>
   )
 }

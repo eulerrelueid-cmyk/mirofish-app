@@ -159,6 +159,11 @@ export interface SimulationReport {
   watchSignals: string[]
 }
 
+export interface SimulationInterviewTurn {
+  question: string
+  answer: string
+}
+
 export interface SimulationScenarioResults {
   agents: SimulationAgent[]
   events: SimulationEvent[]
