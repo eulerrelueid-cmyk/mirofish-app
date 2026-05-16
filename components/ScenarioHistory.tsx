@@ -42,13 +42,14 @@ export function ScenarioHistory({
   onSelect,
 }: ScenarioHistoryProps) {
   return (
-    <section className="glass-panel rounded-[30px] p-4 sm:p-5">
+    <section className="df-panel">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <div className="section-label">History</div>
+          <p className="df-kicker">History</p>
+          <h2 className="mt-2 text-lg font-semibold text-white">Run archive</h2>
         </div>
         <div className="flex items-center gap-3">
-          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300">
             {items.length} runs
           </div>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
@@ -56,13 +57,13 @@ export function ScenarioHistory({
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[20px] border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div className="mb-4 rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </div>
       )}
 
       {!isLoading && items.length === 0 ? (
-        <div className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-12 text-center text-sm text-slate-400">
+        <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-12 text-center text-sm text-slate-400">
           No runs yet.
         </div>
       ) : (
@@ -81,7 +82,7 @@ export function ScenarioHistory({
                 key={item.id}
                 type="button"
                 onClick={() => onSelect(item.id)}
-                className={`w-full rounded-[22px] border px-4 py-4 text-left transition-all ${
+                className={`w-full rounded-lg border px-4 py-4 text-left transition-all ${
                   isActive
                     ? 'border-white/[0.15] bg-white/[0.08]'
                     : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.05]'
@@ -92,7 +93,7 @@ export function ScenarioHistory({
                     <p className="truncate text-sm font-semibold text-white">{item.title}</p>
                     <p className="mt-1 line-clamp-1 text-sm leading-6 text-slate-500">{item.description}</p>
                   </div>
-                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusTone}`}>
+                  <span className={`rounded-md border px-2.5 py-1 text-[11px] font-medium ${statusTone}`}>
                     {formatStatus(item.status)}
                   </span>
                 </div>
@@ -117,21 +118,21 @@ export function ScenarioHistory({
                 )}
 
                 {!item.summaryExcerpt && item.progress?.message && item.status === 'running' && (
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-miro-glow/20 bg-miro-glow/10 px-3 py-1.5 text-xs text-miro-glow">
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-miro-glow/20 bg-miro-glow/10 px-3 py-1.5 text-xs text-miro-glow">
                     <Orbit className="h-3.5 w-3.5" />
                     {item.progress.message}
                   </div>
                 )}
 
                 {item.errorMessage && item.status === 'failed' && (
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-200">
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-200">
                     <AlertTriangle className="h-3.5 w-3.5" />
                     {item.errorMessage}
                   </div>
                 )}
 
                 {item.status === 'completed' && item.resultCounts && (
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-miro-accent/20 bg-miro-accent/10 px-3 py-1.5 text-xs text-miro-accent">
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-miro-accent/20 bg-miro-accent/10 px-3 py-1.5 text-xs text-miro-accent">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     {item.resultCounts.agents} agents
                   </div>

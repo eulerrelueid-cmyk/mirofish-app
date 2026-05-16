@@ -7,6 +7,7 @@ import {
   getScenarioLifecycleStatus,
   isScenarioStale,
   mergeScenarioMetadata,
+  resolveScenarioProgressUpdate,
 } from '../lib/simulation-contract.ts'
 
 test('getScenarioLifecycleStatus keeps intermediate workflow stages in running state', () => {
@@ -45,6 +46,32 @@ test('mergeScenarioMetadata preserves existing workflow metadata when later upda
   assert.equal(merged.workflowRunId, 'run_123')
   assert.equal(merged.mockMode, false)
   assert.equal(merged.progress?.currentRound, 3)
+})
+
+test('resolveScenarioProgressUpdate preserves visible progress when a workflow retry replays earlier stages', () => {
+  const existing = {
+    stage: 'analyzing' as const,
+    message: 'Generating final analysis',
+    currentRound: 12,
+    totalRounds: 12,
+    postsCount: 9,
+    eventsCount: 0,
+    updatedAt: '2026-05-08T21:40:12.734Z',
+  }
+
+  const resolved = resolveScenarioProgressUpdate(existing, {
+    stage: 'initializing',
+    message: 'Generating agent personas',
+    totalRounds: 12,
+    postsCount: 0,
+    eventsCount: 0,
+    updatedAt: '2026-05-08T21:45:36.792Z',
+  })
+
+  assert.equal(resolved.progress.stage, 'analyzing')
+  assert.equal(resolved.progress.message, 'Generating final analysis')
+  assert.equal(resolved.progress.currentRound, 12)
+  assert.equal(resolved.heartbeatOnly, true)
 })
 
 test('buildScenarioFromPollResponse keeps incomplete runs in running state', () => {

@@ -65,14 +65,15 @@ export function SimulationInterviewPanel({ scenario }: SimulationInterviewPanelP
   }
 
   return (
-    <section className="glass-panel rounded-[28px] p-5 sm:p-6">
+    <section className="df-panel">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-miro-accent">
+        <div className="df-icon-box">
           <MessageSquare className="h-5 w-5" />
         </div>
         <div>
-          <div className="section-label">Ask the run</div>
-          <p className="mt-3 text-sm text-slate-500">Query the completed simulation directly.</p>
+          <p className="df-kicker">Deep interaction</p>
+          <h2 className="mt-1 text-lg font-semibold text-white">Ask the run</h2>
+          <p className="mt-1 text-sm text-slate-500">Query the completed simulation directly.</p>
         </div>
       </div>
 
@@ -85,14 +86,14 @@ export function SimulationInterviewPanel({ scenario }: SimulationInterviewPanelP
               setQuestion(starter)
               void submit(starter)
             }}
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
           >
             {starter}
           </button>
         ))}
       </div>
 
-      <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
+      <div className="rounded-lg border border-white/10 bg-black/20 p-4">
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
@@ -105,7 +106,7 @@ export function SimulationInterviewPanel({ scenario }: SimulationInterviewPanelP
             type="button"
             disabled={isLoading || !question.trim()}
             onClick={() => void submit(question)}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
             Ask
@@ -114,7 +115,7 @@ export function SimulationInterviewPanel({ scenario }: SimulationInterviewPanelP
       </div>
 
       {error && (
-        <div className="mt-4 rounded-[20px] border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div className="mt-4 rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </div>
       )}
@@ -122,10 +123,10 @@ export function SimulationInterviewPanel({ scenario }: SimulationInterviewPanelP
       {turns.length > 0 && (
         <div className="mt-4 space-y-3">
           {turns.map((turn, index) => (
-            <div key={`${turn.question}-${index}`} className="soft-panel rounded-[22px] p-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Question</p>
+            <div key={`${turn.question}-${index}`} className="df-card p-4">
+              <p className="df-kicker">Question</p>
               <p className="mt-2 text-sm leading-7 text-white">{turn.question}</p>
-              <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Answer</p>
+              <p className="df-kicker mt-4">Answer</p>
               <p className="mt-2 text-sm leading-7 text-slate-300">{turn.answer}</p>
             </div>
           ))}

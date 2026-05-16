@@ -7,7 +7,13 @@ import {
   SimulationRound,
   SimulationWorldBrief,
 } from '@/types/simulation'
-import { getScenarioLifecycleStatus, mergeScenarioMetadata, type RawScenarioMetadata } from '@/lib/simulation-contract'
+import {
+  getScenarioLifecycleStatus,
+  mergeScenarioMetadata,
+  resolveScenarioProgressUpdate,
+  type RawScenarioMetadata,
+} from '@/lib/simulation-contract'
+import { buildEventInsertRows, isMissingRelatedPostIdColumnError } from '@/lib/simulation-persistence'
 
 export interface PersistedSimulationResults {
   agents: SimulationAgent[]
@@ -82,8 +88,21 @@ export async function updateScenarioProgress(
     throw new Error(`Failed to load scenario metadata: ${fetchError.message}`)
   }
 
-  const results = mergeScenarioMetadata((scenario.results ?? null) as RawScenarioMetadata | null, {
-    progress,
+  const existingMetadata = (scenario.results ?? null) as RawScenarioMetadata | null
+  const resolved = resolveScenarioProgressUpdate(existingMetadata?.progress, progress)
+
+  if (resolved.heartbeatOnly) {
+    console.warn('[Simulation] Ignoring regressive progress update from workflow retry', {
+      scenarioId,
+      existingStage: existingMetadata?.progress?.stage,
+      incomingStage: progress.stage,
+      existingRound: existingMetadata?.progress?.currentRound,
+      incomingRound: progress.currentRound,
+    })
+  }
+
+  const results = mergeScenarioMetadata(existingMetadata, {
+    progress: resolved.progress,
     workflowRunId: metadata.workflowRunId,
     mockMode: metadata.mockMode,
     error: metadata.error,
@@ -92,7 +111,7 @@ export async function updateScenarioProgress(
   const { error } = await supabaseAdmin
     .from('mirofish_scenarios')
     .update({
-      status: getScenarioLifecycleStatus(progress.stage),
+      status: getScenarioLifecycleStatus(resolved.progress.stage),
       results,
       updated_at: new Date().toISOString(),
     })
@@ -223,21 +242,19 @@ export async function persistSimulationResults(
     }
   }
 
-  const { error: eventsError } = await supabaseAdmin
+  let { error: eventsError } = await supabaseAdmin
     .from('mirofish_events')
-    .insert(
-      simulationResults.events.map((event) => ({
-        scenario_id: scenarioId,
-        event_id: event.id,
-        timestamp: event.timestamp.toISOString(),
-        type: event.type,
-        description: event.description,
-        agents_involved: event.agentsInvolved,
-        impact: event.impact,
-        round: event.round,
-        related_post_id: event.relatedPostId,
-      }))
-    )
+    .insert(buildEventInsertRows(scenarioId, simulationResults.events, true))
+
+  if (isMissingRelatedPostIdColumnError(eventsError)) {
+    console.warn('[Simulation] Retrying event persistence without related_post_id for older database schema', {
+      scenarioId,
+    })
+    const retry = await supabaseAdmin
+      .from('mirofish_events')
+      .insert(buildEventInsertRows(scenarioId, simulationResults.events, false))
+    eventsError = retry.error
+  }
 
   if (eventsError) {
     throw new Error(`Failed to save events: ${eventsError.message}`)

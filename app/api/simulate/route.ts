@@ -5,6 +5,7 @@ import { normalizeScenarioField, parseMultipartScenarioFormData } from '@/lib/sc
 import { ensureScenarioOwner, setScenarioOwnerCookie } from '@/lib/scenario-owner'
 import { buildSimulationWorldBrief } from '@/lib/project-artifacts'
 import { getStaleScenarioMessage, isScenarioStale, type RawScenarioMetadata } from '@/lib/simulation-contract'
+import { isMissingColumnError } from '@/lib/simulation-persistence'
 import { markScenarioFailed, updateScenarioProgress } from '@/lib/simulation-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { runScenarioWorkflow } from '@/workflows/simulation'
@@ -338,11 +339,25 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching comments:', commentsError)
     }
 
-    const { data: events, error: eventsError } = await supabaseAdmin
+    let { data: events, error: eventsError } = await supabaseAdmin
       .from('mirofish_events')
       .select('*')
       .eq('scenario_id', scenarioId)
       .order('round', { ascending: true })
+
+    if (isMissingColumnError(eventsError, 'mirofish_events', 'round')) {
+      console.warn('[Simulation] Retrying event fetch ordered by timestamp for older database schema', {
+        scenarioId,
+      })
+      const retry = await supabaseAdmin
+        .from('mirofish_events')
+        .select('*')
+        .eq('scenario_id', scenarioId)
+        .order('timestamp', { ascending: true })
+
+      events = retry.data
+      eventsError = retry.error
+    }
 
     if (eventsError) {
       console.error('Error fetching events:', eventsError)

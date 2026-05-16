@@ -187,6 +187,59 @@ export function mergeScenarioMetadata(
   }
 }
 
+const PROGRESS_STAGE_RANK: Record<SimulationProgressState['stage'], number> = {
+  queued: 0,
+  initializing: 1,
+  running: 2,
+  analyzing: 3,
+  persisting: 4,
+  completed: 5,
+  failed: 6,
+}
+
+function isProgressRegression(
+  existing: SimulationProgressState | undefined,
+  incoming: SimulationProgressState
+) {
+  if (!existing || incoming.stage === 'failed' || incoming.stage === 'completed') {
+    return false
+  }
+
+  const existingRank = PROGRESS_STAGE_RANK[existing.stage]
+  const incomingRank = PROGRESS_STAGE_RANK[incoming.stage]
+
+  if (incomingRank < existingRank) {
+    return true
+  }
+
+  if (incomingRank === existingRank && existing.currentRound && incoming.currentRound) {
+    return incoming.currentRound < existing.currentRound
+  }
+
+  return false
+}
+
+export function resolveScenarioProgressUpdate(
+  existing: SimulationProgressState | undefined,
+  incoming: SimulationProgressState
+): { progress: SimulationProgressState; heartbeatOnly: boolean } {
+  if (!isProgressRegression(existing, incoming)) {
+    return { progress: incoming, heartbeatOnly: false }
+  }
+
+  if (!existing) {
+    return { progress: incoming, heartbeatOnly: false }
+  }
+
+  return {
+    progress: {
+      ...existing,
+      updatedAt: incoming.updatedAt,
+    },
+    heartbeatOnly: true,
+  }
+}
+
 export function isScenarioStale(
   status: string | undefined,
   updatedAt: RawTimestamp | undefined,
