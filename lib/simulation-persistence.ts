@@ -1,10 +1,15 @@
 import type { SimulationEvent } from '../types/simulation'
 
+export type PersistedSimulationEventType = Extract<
+  SimulationEvent['type'],
+  'interaction' | 'sentiment_shift' | 'emergence' | 'milestone'
+>
+
 export interface SimulationEventInsertRow {
   scenario_id: string
   event_id: string
   timestamp: string
-  type: SimulationEvent['type']
+  type: PersistedSimulationEventType
   description: string
   agents_involved: string[]
   impact: number
@@ -17,6 +22,22 @@ export interface BuildEventInsertRowsOptions {
   includeRound: boolean
 }
 
+export function normalizeEventTypeForPersistence(type: SimulationEvent['type']): PersistedSimulationEventType {
+  if (type === 'post_viral') {
+    return 'milestone'
+  }
+
+  if (type === 'consensus') {
+    return 'emergence'
+  }
+
+  if (type === 'conflict') {
+    return 'sentiment_shift'
+  }
+
+  return type
+}
+
 export function buildEventInsertRows(
   scenarioId: string,
   events: SimulationEvent[],
@@ -27,7 +48,7 @@ export function buildEventInsertRows(
       scenario_id: scenarioId,
       event_id: event.id,
       timestamp: event.timestamp.toISOString(),
-      type: event.type,
+      type: normalizeEventTypeForPersistence(event.type),
       description: event.description,
       agents_involved: event.agentsInvolved,
       impact: event.impact,

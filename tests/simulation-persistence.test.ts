@@ -5,6 +5,7 @@ import {
   buildEventInsertRows,
   isMissingColumnError,
   isMissingRelatedPostIdColumnError,
+  normalizeEventTypeForPersistence,
 } from '../lib/simulation-persistence.ts'
 import type { SimulationEvent } from '../types/simulation.ts'
 
@@ -38,6 +39,14 @@ test('buildEventInsertRows includes related_post_id when the schema supports it'
   })
 
   assert.equal(rows[0].related_post_id, 'post_1')
+  assert.equal(rows[0].type, 'milestone')
+})
+
+test('normalizeEventTypeForPersistence maps newer event types to legacy database-compatible types', () => {
+  assert.equal(normalizeEventTypeForPersistence('post_viral'), 'milestone')
+  assert.equal(normalizeEventTypeForPersistence('consensus'), 'emergence')
+  assert.equal(normalizeEventTypeForPersistence('conflict'), 'sentiment_shift')
+  assert.equal(normalizeEventTypeForPersistence('interaction'), 'interaction')
 })
 
 test('buildEventInsertRows can omit round for older database schemas', () => {
