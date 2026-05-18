@@ -8,14 +8,19 @@ export interface SimulationEventInsertRow {
   description: string
   agents_involved: string[]
   impact: number
-  round: number
+  round?: number
   related_post_id?: string
+}
+
+export interface BuildEventInsertRowsOptions {
+  includeRelatedPostId: boolean
+  includeRound: boolean
 }
 
 export function buildEventInsertRows(
   scenarioId: string,
   events: SimulationEvent[],
-  includeRelatedPostId: boolean
+  options: BuildEventInsertRowsOptions
 ): SimulationEventInsertRow[] {
   return events.map((event) => {
     const row: SimulationEventInsertRow = {
@@ -26,10 +31,13 @@ export function buildEventInsertRows(
       description: event.description,
       agents_involved: event.agentsInvolved,
       impact: event.impact,
-      round: event.round,
     }
 
-    if (includeRelatedPostId && event.relatedPostId) {
+    if (options.includeRound) {
+      row.round = event.round
+    }
+
+    if (options.includeRelatedPostId && event.relatedPostId) {
       row.related_post_id = event.relatedPostId
     }
 

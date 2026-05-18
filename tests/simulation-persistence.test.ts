@@ -20,17 +20,36 @@ const event: SimulationEvent = {
 }
 
 test('buildEventInsertRows can omit related_post_id for older database schemas', () => {
-  const rows = buildEventInsertRows('scenario_1', [event], false)
+  const rows = buildEventInsertRows('scenario_1', [event], {
+    includeRelatedPostId: false,
+    includeRound: true,
+  })
 
   assert.equal(rows.length, 1)
   assert.equal(Object.hasOwn(rows[0], 'related_post_id'), false)
+  assert.equal(rows[0].round, 3)
   assert.equal(rows[0].event_id, 'event_1')
 })
 
 test('buildEventInsertRows includes related_post_id when the schema supports it', () => {
-  const rows = buildEventInsertRows('scenario_1', [event], true)
+  const rows = buildEventInsertRows('scenario_1', [event], {
+    includeRelatedPostId: true,
+    includeRound: true,
+  })
 
   assert.equal(rows[0].related_post_id, 'post_1')
+})
+
+test('buildEventInsertRows can omit round for older database schemas', () => {
+  const rows = buildEventInsertRows('scenario_1', [event], {
+    includeRelatedPostId: false,
+    includeRound: false,
+  })
+
+  assert.equal(rows.length, 1)
+  assert.equal(Object.hasOwn(rows[0], 'round'), false)
+  assert.equal(Object.hasOwn(rows[0], 'related_post_id'), false)
+  assert.equal(rows[0].event_id, 'event_1')
 })
 
 test('isMissingRelatedPostIdColumnError detects Supabase schema cache misses', () => {

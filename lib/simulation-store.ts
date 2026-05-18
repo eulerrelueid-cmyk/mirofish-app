@@ -13,7 +13,7 @@ import {
   resolveScenarioProgressUpdate,
   type RawScenarioMetadata,
 } from '@/lib/simulation-contract'
-import { buildEventInsertRows, isMissingRelatedPostIdColumnError } from '@/lib/simulation-persistence'
+import { buildEventInsertRows, isMissingColumnError, isMissingRelatedPostIdColumnError } from '@/lib/simulation-persistence'
 
 export interface PersistedSimulationResults {
   agents: SimulationAgent[]
@@ -41,6 +41,8 @@ interface ProgressMetadata {
   mockMode?: boolean
   error?: string
 }
+
+type DatabaseColumnError = { code?: string; message?: string }
 
 async function updateLinkedProjectForScenario(
   scenarioId: string,
@@ -242,22 +244,48 @@ export async function persistSimulationResults(
     }
   }
 
-  let { error: eventsError } = await supabaseAdmin
-    .from('mirofish_events')
-    .insert(buildEventInsertRows(scenarioId, simulationResults.events, true))
+  if (simulationResults.events.length > 0) {
+    let includeRelatedPostId = true
+    let includeRound = true
+    let eventsError: { code?: string; message?: string } | null = null
 
-  if (isMissingRelatedPostIdColumnError(eventsError)) {
-    console.warn('[Simulation] Retrying event persistence without related_post_id for older database schema', {
-      scenarioId,
-    })
-    const retry = await supabaseAdmin
-      .from('mirofish_events')
-      .insert(buildEventInsertRows(scenarioId, simulationResults.events, false))
-    eventsError = retry.error
-  }
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const insertResponse = (await supabaseAdmin
+        .from('mirofish_events')
+        .insert(buildEventInsertRows(scenarioId, simulationResults.events, {
+          includeRelatedPostId,
+          includeRound,
+        }))) as { error: DatabaseColumnError | null }
 
-  if (eventsError) {
-    throw new Error(`Failed to save events: ${eventsError.message}`)
+      const insertError: DatabaseColumnError | null = insertResponse.error
+      eventsError = insertError
+
+      if (!eventsError) {
+        break
+      }
+
+      const missingRelatedPostId: boolean =
+        includeRelatedPostId && isMissingRelatedPostIdColumnError(eventsError)
+      const missingRound: boolean =
+        includeRound && isMissingColumnError(eventsError, 'mirofish_events', 'round')
+
+      if (!missingRelatedPostId && !missingRound) {
+        break
+      }
+
+      includeRelatedPostId = includeRelatedPostId && !missingRelatedPostId
+      includeRound = includeRound && !missingRound
+
+      console.warn('[Simulation] Retrying event persistence for older database schema', {
+        scenarioId,
+        includeRelatedPostId,
+        includeRound,
+      })
+    }
+
+    if (eventsError) {
+      throw new Error(`Failed to save events: ${eventsError.message}`)
+    }
   }
 
   const { error: roundsError } = await supabaseAdmin
